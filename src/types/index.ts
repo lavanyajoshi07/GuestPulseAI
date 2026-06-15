@@ -1,43 +1,68 @@
 // Review Analysis Types
-export type Sentiment = 'Positive' | 'Neutral' | 'Negative';
+export type Sentiment = 'positive' | 'neutral' | 'negative';
 
 export type Category =
-  | 'Food'
-  | 'Cleanliness'
-  | 'Location'
-  | 'Host'
-  | 'Value'
-  | 'Experience';
+  | 'cleanliness'
+  | 'communication'
+  | 'location'
+  | 'amenities'
+  | 'host'
+  | 'value'
+  | 'other';
 
 export interface ReviewAnalysis {
   sentiment: Sentiment;
   category: Category;
   response: string;
+  keyPoints?: string[];
+  sentimentScore?: number;
+}
+
+export interface AnalysisResult {
+  _id?: string;
+  sentiment: Sentiment;
+  sentimentScore?: number;
+  category: Category;
+  keyPoints?: string[];
+  suggestedResponse: string;
+  createdAt: Date;
+}
+
+export interface Review {
+  _id: string;
+  text: string;
+  sentiment: Sentiment;
+  sentimentScore?: number;
+  category: Category;
+  keyPoints?: string[];
+  suggestedResponse: string;
+  analysis?: AnalysisResult;
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface ReviewDocument {
   _id?: string;
-  reviewText: string;
+  text: string;
   sentiment: Sentiment;
+  sentimentScore?: number;
   category: Category;
-  aiResponse: string;
+  keyPoints?: string[];
+  suggestedResponse: string;
+  analysis?: AnalysisResult;
   createdAt: Date;
   updatedAt?: Date;
 }
 
 export interface DashboardStats {
   totalReviews: number;
-  positive: number;
-  neutral: number;
-  negative: number;
-  sentimentBreakdown: {
-    Positive: number;
-    Neutral: number;
-    Negative: number;
-  };
-  categoryBreakdown: {
-    [key in Category]: number;
-  };
+  positiveReviews: number;
+  neutralReviews: number;
+  negativeReviews: number;
+  averageSentimentScore: number;
+  mostCommonCategory: Category;
+  categoryBreakdown: Array<{ category: Category; count: number }>;
+  sentimentTrend: Array<{ date: string; positive: number; neutral: number; negative: number }>;
 }
 
 export interface ApiResponse<T> {

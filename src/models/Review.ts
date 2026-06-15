@@ -1,17 +1,20 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IReview extends Document {
-  reviewText: string;
-  sentiment: 'Positive' | 'Neutral' | 'Negative';
-  category: 'Food' | 'Cleanliness' | 'Location' | 'Host' | 'Value' | 'Experience';
-  aiResponse: string;
+  text: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
+  sentimentScore?: number;
+  category: 'cleanliness' | 'communication' | 'location' | 'amenities' | 'host' | 'value' | 'other';
+  keyPoints?: string[];
+  suggestedResponse: string;
+  analysis?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const ReviewSchema = new Schema<IReview>(
   {
-    reviewText: {
+    text: {
       type: String,
       required: [true, 'Review text is required'],
       trim: true,
@@ -19,17 +22,33 @@ const ReviewSchema = new Schema<IReview>(
     },
     sentiment: {
       type: String,
-      enum: ['Positive', 'Neutral', 'Negative'],
+      enum: ['positive', 'neutral', 'negative'],
       required: [true, 'Sentiment is required'],
+      lowercase: true,
+    },
+    sentimentScore: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: 0.75,
     },
     category: {
       type: String,
-      enum: ['Food', 'Cleanliness', 'Location', 'Host', 'Value', 'Experience'],
+      enum: ['cleanliness', 'communication', 'location', 'amenities', 'host', 'value', 'other'],
       required: [true, 'Category is required'],
+      lowercase: true,
     },
-    aiResponse: {
+    keyPoints: {
+      type: [String],
+      default: [],
+    },
+    suggestedResponse: {
       type: String,
-      required: [true, 'AI response is required'],
+      required: [true, 'Suggested response is required'],
+    },
+    analysis: {
+      type: Schema.Types.Mixed,
+      default: {},
     },
   },
   {

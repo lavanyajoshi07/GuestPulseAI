@@ -23,9 +23,10 @@ Review: "${reviewText}"
 
 Return this exact JSON format:
 {
-  "sentiment": "Positive | Neutral | Negative",
-  "category": "Food | Cleanliness | Location | Host | Value | Experience",
-  "response": "Professional response suggestion"
+  "sentiment": "positive | neutral | negative",
+  "category": "cleanliness | communication | location | amenities | host | value | other",
+  "response": "Professional response suggestion",
+  "keyPoints": ["key point 1", "key point 2"]
 }`;
 
   try {
@@ -78,27 +79,39 @@ Return this exact JSON format:
       throw new Error('Missing required fields in Gemini response');
     }
 
-    // Validate enum values
-    const validSentiments = ['Positive', 'Neutral', 'Negative'];
+    // Validate enum values and normalize to lowercase
+    const validSentiments = ['positive', 'neutral', 'negative'];
     const validCategories = [
-      'Food',
-      'Cleanliness',
-      'Location',
-      'Host',
-      'Value',
-      'Experience',
+      'cleanliness',
+      'communication',
+      'location',
+      'amenities',
+      'host',
+      'value',
+      'other',
     ];
 
-    if (!validSentiments.includes(analysis.sentiment)) {
+    const normalizedSentiment = analysis.sentiment.toLowerCase();
+    const normalizedCategory = analysis.category.toLowerCase();
+
+    if (!validSentiments.includes(normalizedSentiment)) {
       throw new Error(`Invalid sentiment: ${analysis.sentiment}`);
     }
 
-    if (!validCategories.includes(analysis.category)) {
+    if (!validCategories.includes(normalizedCategory)) {
       throw new Error(`Invalid category: ${analysis.category}`);
     }
 
-    console.log('[Gemini] Analysis successful:', analysis);
-    return analysis;
+    const result: ReviewAnalysis = {
+      sentiment: normalizedSentiment as any,
+      category: normalizedCategory as any,
+      response: analysis.response,
+      keyPoints: Array.isArray(analysis.keyPoints) ? analysis.keyPoints : [],
+      sentimentScore: 0.75, // Default confidence score
+    };
+
+    console.log('[Gemini] Analysis successful:', result);
+    return result;
   } catch (error) {
     console.error('[Gemini] Analysis failed:', error);
     throw error;
