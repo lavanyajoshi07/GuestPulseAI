@@ -21,27 +21,27 @@ export default function StatCard({
   trend,
 }: StatCardProps) {
   const colorClasses = {
-    blue: 'bg-blue-50 border-blue-200',
-    green: 'bg-green-50 border-green-200',
-    red: 'bg-red-50 border-red-200',
-    purple: 'bg-purple-50 border-purple-200',
+    blue: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/30',
+    green: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/30',
+    red: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30',
+    purple: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/30',
   };
 
   const iconColorClasses = {
-    blue: 'text-blue-600',
-    green: 'text-green-600',
-    red: 'text-red-600',
-    purple: 'text-purple-600',
+    blue: 'text-blue-600 dark:text-blue-400',
+    green: 'text-green-600 dark:text-green-400',
+    red: 'text-red-600 dark:text-red-400',
+    purple: 'text-purple-600 dark:text-purple-400',
   };
 
   return (
-    <div className={`border rounded-lg p-6 ${colorClasses[color]}`}>
+    <div className={`border border-border rounded-lg p-6 transition-all duration-300 ${colorClasses[color]}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600 mb-1">{label}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm font-semibold text-muted-foreground mb-1">{label}</p>
+          <p className="text-3xl font-extrabold text-foreground">{value}</p>
           {trend && (
-            <p className={`text-xs font-medium mt-2 ${trend.direction === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-xs font-semibold mt-2 ${trend.direction === 'up' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {trend.direction === 'up' ? '↑' : '↓'} {trend.percentage}% from last week
             </p>
           )}

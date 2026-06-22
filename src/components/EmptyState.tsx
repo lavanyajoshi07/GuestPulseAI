@@ -18,14 +18,14 @@ export default function EmptyState({ icon: Icon, title, description, action }: E
     <div className="flex items-center justify-center py-16 px-4">
       <div className="text-center max-w-md">
         <div className="flex justify-center mb-4">
-          <Icon className="w-16 h-16 text-gray-400" />
+          <Icon className="w-16 h-16 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 mb-6">{description}</p>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+        <p className="text-muted-foreground mb-6">{description}</p>
         {action && (
           <Link
             href={action.href}
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="inline-block bg-blue-600 dark:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             {action.label}
           </Link>

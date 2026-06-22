@@ -59,21 +59,21 @@ export default function RegisterForm() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h1>
-        <p className="text-gray-600 mb-6">Join ReviewLens to start analyzing reviews</p>
+      <div className="bg-card rounded-lg shadow-sm border border-border p-8 transition-colors duration-300">
+        <h1 className="text-2xl font-bold text-foreground mb-2">Create Account</h1>
+        <p className="text-muted-foreground mb-6">Join ReviewLens to start analyzing reviews</p>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-red-700 text-sm">{error}</p>
+          <div className="mb-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-1">
+            <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-1">
               Full Name
             </label>
             <input
@@ -82,7 +82,7 @@ export default function RegisterForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="John Doe"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-muted transition-colors"
               disabled={isLoading}
               required
             />
@@ -90,7 +90,7 @@ export default function RegisterForm() {
 
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-1">
+            <label htmlFor="email" className="block text-sm font-semibold text-foreground mb-1">
               Email
             </label>
             <input
@@ -99,7 +99,7 @@ export default function RegisterForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-muted transition-colors"
               disabled={isLoading}
               required
             />
@@ -107,7 +107,7 @@ export default function RegisterForm() {
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-1">
+            <label htmlFor="password" className="block text-sm font-semibold text-foreground mb-1">
               Password
             </label>
             <div className="relative">
@@ -117,14 +117,14 @@ export default function RegisterForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                className="w-full px-4 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-muted transition-colors"
                 disabled={isLoading}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -135,11 +135,11 @@ export default function RegisterForm() {
             </div>
             <div className="mt-2 flex items-center gap-2 text-sm">
               {passwordValid ? (
-                <Check className="w-4 h-4 text-green-600" />
+                <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
               ) : (
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="w-4 h-4 text-muted-foreground" />
               )}
-              <span className={passwordValid ? 'text-green-600' : 'text-gray-500'}>
+              <span className={passwordValid ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
                 At least 6 characters
               </span>
             </div>
@@ -147,7 +147,7 @@ export default function RegisterForm() {
 
           {/* Confirm Password */}
           <div>
-            <label htmlFor="passwordConfirm" className="block text-sm font-medium text-gray-900 mb-1">
+            <label htmlFor="passwordConfirm" className="block text-sm font-semibold text-foreground mb-1">
               Confirm Password
             </label>
             <input
@@ -156,18 +156,18 @@ export default function RegisterForm() {
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-4 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-muted transition-colors"
               disabled={isLoading}
               required
             />
             {password && passwordConfirm && (
               <div className="mt-2 flex items-center gap-2 text-sm">
                 {passwordsMatch ? (
-                  <Check className="w-4 h-4 text-green-600" />
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                 ) : (
-                  <X className="w-4 h-4 text-red-600" />
+                  <X className="w-4 h-4 text-red-600 dark:text-red-400" />
                 )}
-                <span className={passwordsMatch ? 'text-green-600' : 'text-red-600'}>
+                <span className={passwordsMatch ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                   {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
                 </span>
               </div>
@@ -178,7 +178,7 @@ export default function RegisterForm() {
           <button
             type="submit"
             disabled={isLoading || !passwordValid || !passwordsMatch}
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-400 transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
             {isLoading ? 'Creating account...' : 'Create Account'}
@@ -186,9 +186,9 @@ export default function RegisterForm() {
         </form>
 
         {/* Login Link */}
-        <p className="mt-6 text-center text-gray-600 text-sm">
+        <p className="mt-6 text-center text-muted-foreground text-sm">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+          <Link href="/auth/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold">
             Sign In
           </Link>
         </p>

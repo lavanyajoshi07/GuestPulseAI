@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken, setAuthCookie } from '@/lib/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
+import { mockStore } from '@/lib/mockStore';
+import bcryptjs from 'bcryptjs';
 import {
   ValidationError,
   DatabaseError,
@@ -39,10 +41,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to database
+    let dbConn;
     try {
-      await connectDB();
+      dbConn = await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
+    }
+
+    if (dbConn === null) {
+      // Mock mode fallback
+      const user = mockStore.findUserByEmail(email);
+      if (!user) {
+        throw new ValidationError('Invalid email or password');
+      }
+
+      const isPasswordValid = bcryptjs.compareSync(password, user.passwordHash);
+      if (!isPasswordValid) {
+        throw new ValidationError('Invalid email or password');
+      }
+
+      const token = await generateToken(user._id, user.email);
+      await setAuthCookie(token);
+
+      return NextResponse.json({
+        success: true,
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+        },
+        message: 'Login successful',
+      });
     }
 
     // Find user
@@ -79,8 +109,9 @@ export async function POST(request: NextRequest) {
     // Return response
     return NextResponse.json({
       success: true,
-      data: {
-        userId: user._id.toString(),
+      token,
+      user: {
+        id: user._id.toString(),
         email: user.email,
         name: user.name,
       },

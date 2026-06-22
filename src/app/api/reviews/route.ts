@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
+import { mockStore } from '@/lib/mockStore';
 import {
   validatePaginationParams,
   validateSentiment,
@@ -65,10 +66,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Connect to database
+    let dbConn;
     try {
-      await connectDB();
+      dbConn = await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
+    }
+
+    if (dbConn === null) {
+      const filter: Record<string, any> = {};
+      if (sentiment) filter.sentiment = sentiment.toLowerCase();
+      if (category) filter.category = category.toLowerCase();
+
+      const { reviews, total } = mockStore.getReviews(filter, parsedSkip, parsedLimit);
+
+      return NextResponse.json({
+        success: true,
+        data: reviews,
+        pagination: {
+          skip: parsedSkip,
+          limit: parsedLimit,
+          total,
+          hasMore: parsedSkip + parsedLimit < total,
+        },
+      });
     }
 
     // Build filter

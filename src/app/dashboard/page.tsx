@@ -37,7 +37,7 @@ function DashboardContent() {
       const response = await fetch('/api/dashboard');
       if (!response.ok) throw new Error('Failed to load dashboard');
       const data = await response.json();
-      setStats(data);
+      setStats(data.data || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard');
     } finally {
@@ -47,11 +47,11 @@ function DashboardContent() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background transition-colors duration-300">
         <div className="max-w-6xl mx-auto px-4 py-12 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading dashboard...</p>
+            <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading dashboard...</p>
           </div>
         </div>
       </main>
@@ -60,13 +60,13 @@ function DashboardContent() {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background transition-colors duration-300">
         <div className="max-w-6xl mx-auto px-4 py-12">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex items-start gap-4">
-            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg p-6 flex items-start gap-4">
+            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-red-900 mb-1">Error</h3>
-              <p className="text-red-700 text-sm">{error}</p>
+              <h3 className="font-semibold text-red-950 dark:text-red-400 mb-1">Error</h3>
+              <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
             </div>
           </div>
         </div>
@@ -76,7 +76,7 @@ function DashboardContent() {
 
   if (!stats || stats.totalReviews === 0) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background transition-colors duration-300">
         <div className="max-w-6xl mx-auto px-4 py-12">
           <EmptyState
             icon={BarChart3}
@@ -96,12 +96,12 @@ function DashboardContent() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">
             Overview of your review analysis metrics and trends.
           </p>
         </div>
@@ -138,8 +138,8 @@ function DashboardContent() {
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
           {/* Sentiment Distribution */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Sentiment Distribution</h3>
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6 transition-colors duration-300">
+            <h3 className="text-lg font-semibold text-foreground mb-6">Sentiment Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -156,24 +156,32 @@ function DashboardContent() {
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '0.5rem',
+                    color: 'var(--foreground)',
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
           {/* Category Breakdown */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Top Categories</h3>
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6 transition-colors duration-300">
+            <h3 className="text-lg font-semibold text-foreground mb-6">Top Categories</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={stats.categoryBreakdown.slice(0, 6)}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="category" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="category" stroke="var(--muted-foreground)" />
+                <YAxis stroke="var(--muted-foreground)" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.5rem',
+                    color: 'var(--foreground)',
                   }}
                 />
                 <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
@@ -183,18 +191,19 @@ function DashboardContent() {
         </div>
 
         {/* Sentiment Trend */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-12">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Sentiment Trend</h3>
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-12 transition-colors duration-300">
+          <h3 className="text-lg font-semibold text-foreground mb-6">Sentiment Trend</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={stats.sentimentTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="date" stroke="var(--muted-foreground)" />
+              <YAxis stroke="var(--muted-foreground)" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: 'var(--card)',
+                  border: '1px solid var(--border)',
                   borderRadius: '0.5rem',
+                  color: 'var(--foreground)',
                 }}
               />
               <Legend />
@@ -207,20 +216,20 @@ function DashboardContent() {
 
         {/* Quick Stats */}
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Average Sentiment Score</p>
-            <p className="text-4xl font-bold text-gray-900">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6 transition-colors duration-300">
+            <p className="text-sm font-medium text-muted-foreground mb-2">Average Sentiment Score</p>
+            <p className="text-4xl font-bold text-foreground">
               {(stats.averageSentimentScore * 100).toFixed(0)}%
             </p>
-            <p className="text-xs text-gray-500 mt-2">Based on all analyzed reviews</p>
+            <p className="text-xs text-muted-foreground mt-2">Based on all analyzed reviews</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-sm font-medium text-gray-600 mb-2">Most Common Category</p>
-            <p className="text-4xl font-bold text-gray-900 capitalize">
+          <div className="bg-card rounded-lg shadow-sm border border-border p-6 transition-colors duration-300">
+            <p className="text-sm font-medium text-muted-foreground mb-2">Most Common Category</p>
+            <p className="text-4xl font-bold text-foreground capitalize">
               {stats.mostCommonCategory}
             </p>
-            <p className="text-xs text-gray-500 mt-2">Most discussed topic in reviews</p>
+            <p className="text-xs text-muted-foreground mt-2">Most discussed topic in reviews</p>
           </div>
         </div>
       </div>

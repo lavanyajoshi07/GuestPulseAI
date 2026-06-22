@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken, setAuthCookie } from '@/lib/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
+import { mockStore } from '@/lib/mockStore';
 import {
   ValidationError,
   DatabaseError,
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
       throw new ValidationError('Password is required', 'password');
     }
 
-    if (!passwordConfirm || passwordConfirm !== password) {
+    if (passwordConfirm !== password) {
       throw new ValidationError('Passwords do not match', 'passwordConfirm');
     }
 
@@ -57,21 +58,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to database
+    let dbConn;
     try {
-      await connectDB();
+      dbConn = await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
     }
 
-    // Check if user already exists
-    try {
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (dbConn === null) {
+      // Mock mode fallback
+      const existingUser = mockStore.findUserByEmail(email);
       if (existingUser) {
         throw new ValidationError('Email already registered', 'email');
       }
-    } catch (error) {
-      if (error instanceof ValidationError) throw error;
-      throw new DatabaseError('Failed to check email availability');
+
+      const user = mockStore.createUser(name, email, password);
+      const token = await generateToken(user._id, user.email);
+      await setAuthCookie(token);
+
+      return NextResponse.json({
+        success: true,
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+        },
+        message: 'Registration successful',
+      });
     }
 
     // Create user
@@ -93,8 +107,9 @@ export async function POST(request: NextRequest) {
       // Return response
       return NextResponse.json({
         success: true,
-        data: {
-          userId: user._id.toString(),
+        token,
+        user: {
+          id: user._id.toString(),
           email: user.email,
           name: user.name,
         },

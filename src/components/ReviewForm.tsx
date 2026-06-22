@@ -38,7 +38,7 @@ export default function ReviewForm({ onSubmit, isLoading = false }: ReviewFormPr
     <form onSubmit={handleSubmit} className="w-full">
       <div className="space-y-4">
         <div>
-          <label htmlFor="review" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="review" className="block text-sm font-semibold text-foreground mb-2">
             Review Text
           </label>
           <textarea
@@ -46,17 +46,17 @@ export default function ReviewForm({ onSubmit, isLoading = false }: ReviewFormPr
             value={review}
             onChange={(e) => setReview(e.target.value)}
             placeholder="Paste a guest review here... (At least 10 characters)"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-4 py-3 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-colors"
             rows={6}
             disabled={isLoading}
           />
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             {review.length} characters
           </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 rounded-lg text-sm transition-colors">
             {error}
           </div>
         )}
@@ -64,7 +64,7 @@ export default function ReviewForm({ onSubmit, isLoading = false }: ReviewFormPr
         <button
           type="submit"
           disabled={isLoading || !review.trim()}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+          className="w-full bg-blue-600 dark:bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
         >
           {isLoading ? (
             <>

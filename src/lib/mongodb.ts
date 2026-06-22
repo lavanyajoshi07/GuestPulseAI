@@ -13,8 +13,10 @@ let cached: MongooseConnection = {
 };
 
 async function connectDB() {
-  if (!MONGODB_URI) {
-    throw new Error('Please define the MONGODB_URI environment variable');
+  const isMock = !MONGODB_URI || MONGODB_URI.includes('YOUR_USERNAME') || MONGODB_URI.includes('cluster-name');
+  if (isMock) {
+    console.log('[MongoDB] Running in Mock In-Memory Database Mode');
+    return null;
   }
 
   if (cached.conn) {

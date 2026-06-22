@@ -3,6 +3,7 @@ import { analyzeReviewWithGemini } from '@/lib/gemini';
 import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
+import { mockStore } from '@/lib/mockStore';
 import {
   validateAnalyzeRequest,
   validateReviewText,
@@ -37,6 +38,55 @@ export async function POST(request: NextRequest) {
     // Validate request
     const { review } = validateAnalyzeRequest(body);
 
+    const isMock = !process.env.MONGODB_URI || process.env.MONGODB_URI.includes('YOUR_USERNAME') || process.env.MONGODB_URI.includes('cluster-name');
+    if (isMock) {
+      const lowerReview = review.toLowerCase();
+      let sentiment: 'positive' | 'neutral' | 'negative' = 'positive';
+      let category: 'cleanliness' | 'communication' | 'location' | 'amenities' | 'host' | 'value' | 'other' = 'other';
+      let keyPoints = ['Comfortable rooms', 'Decent service'];
+      let responseText = 'Thank you for your feedback! We are glad you enjoyed your stay.';
+
+      if (lowerReview.includes('dirty') || lowerReview.includes('cleanliness') || lowerReview.includes('spotless') || lowerReview.includes('clean')) {
+        category = 'cleanliness';
+        keyPoints = ['Spotless rooms', 'Very clean stay'];
+      } else if (lowerReview.includes('location') || lowerReview.includes('close') || lowerReview.includes('market')) {
+        category = 'location';
+        keyPoints = ['Convenient location', 'Close to market'];
+      } else if (lowerReview.includes('host') || lowerReview.includes('responsive') || lowerReview.includes('communication')) {
+        category = 'communication';
+        keyPoints = ['Responsive host', 'Excellent communication'];
+      }
+
+      if (lowerReview.includes('bad') || lowerReview.includes('poor') || lowerReview.includes('disappointing') || lowerReview.includes('terrible')) {
+        sentiment = 'negative';
+        responseText = 'We sincerely apologize for the issues you encountered. We are looking into this immediately.';
+      } else if (lowerReview.includes('okay') || lowerReview.includes('average') || lowerReview.includes('decent')) {
+        sentiment = 'neutral';
+        responseText = 'Thank you for your review. We appreciate your feedback and will work to improve.';
+      }
+
+      const mockReview = mockStore.createReview(
+        review,
+        sentiment,
+        category,
+        0.85,
+        keyPoints,
+        responseText
+      );
+
+      const result: AnalysisResult = {
+        _id: mockReview._id,
+        sentiment: mockReview.sentiment,
+        sentimentScore: mockReview.sentimentScore,
+        category: mockReview.category,
+        keyPoints: mockReview.keyPoints,
+        suggestedResponse: mockReview.suggestedResponse,
+        createdAt: mockReview.createdAt,
+      };
+
+      return NextResponse.json(result);
+    }
+
     // Analyze with Gemini
     let analysis;
     try {
@@ -51,9 +101,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to database and save
+    let dbConn;
     try {
-      await connectDB();
+      dbConn = await connectDB();
+    } catch (error) {
+      logError(error, 'Database Connection');
+      throw new DatabaseError('Failed to connect to database');
+    }
 
+    if (dbConn === null) {
+      const mockReview = mockStore.createReview(
+        review,
+        analysis.sentiment,
+        analysis.category,
+        analysis.sentimentScore || 0.75,
+        analysis.keyPoints || [],
+        analysis.response
+      );
+
+      const result: AnalysisResult = {
+        _id: mockReview._id,
+        sentiment: mockReview.sentiment,
+        sentimentScore: mockReview.sentimentScore,
+        category: mockReview.category,
+        keyPoints: mockReview.keyPoints,
+        suggestedResponse: mockReview.suggestedResponse,
+        createdAt: mockReview.createdAt,
+      };
+
+      return NextResponse.json(result);
+    }
+
+    try {
       const newReview = new Review({
         text: review,
         sentiment: analysis.sentiment,
