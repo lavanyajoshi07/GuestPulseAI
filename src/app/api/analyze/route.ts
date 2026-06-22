@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeReviewWithGemini } from '@/lib/gemini';
 import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
+import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
 import {
   validateAnalyzeRequest,
   validateReviewText,
@@ -20,6 +21,10 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const ip = getClientIp(request);
+  const rateLimitError = rateLimitMiddleware(RATE_LIMIT_CONFIGS.analyze)(request);
+  if (rateLimitError) return rateLimitError;
   try {
     // Parse request body
     let body;

@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import ReviewForm from '@/components/ReviewForm';
 import ResultCard from '@/components/ResultCard';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { AnalysisResult } from '@/types';
 
-export default function AnalyzerPage() {
+function AnalyzerContent() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -89,5 +90,13 @@ export default function AnalyzerPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function AnalyzerPage() {
+  return (
+    <ProtectedRoute>
+      <AnalyzerContent />
+    </ProtectedRoute>
   );
 }

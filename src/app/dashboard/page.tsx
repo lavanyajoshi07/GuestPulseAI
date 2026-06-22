@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import StatCard from '@/components/StatCard';
 import EmptyState from '@/components/EmptyState';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { BarChart3, Loader2, AlertCircle, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -19,7 +20,7 @@ interface DashboardStats {
 
 const COLORS = ['#10b981', '#6b7280', '#ef4444'];
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -224,5 +225,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }

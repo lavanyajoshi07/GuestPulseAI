@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import ReviewCard from '@/components/ReviewCard';
 import ResultCard from '@/components/ResultCard';
 import EmptyState from '@/components/EmptyState';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { History, Loader2, AlertCircle, X } from 'lucide-react';
 import type { Review, AnalysisResult } from '@/types';
 
-export default function HistoryPage() {
+function HistoryContent() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,5 +170,13 @@ export default function HistoryPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <ProtectedRoute>
+      <HistoryContent />
+    </ProtectedRoute>
   );
 }
