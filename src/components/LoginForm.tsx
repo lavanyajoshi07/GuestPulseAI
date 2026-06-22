@@ -106,6 +106,8 @@ export default function LoginForm() {
                 )}
               </button>
             </div>
+            {/* 👇 Added helper text */}
+            <p className="text-xs text-gray-500 mt-1">Make sure your password is secure</p>
           </div>
 
           {/* Submit */}
