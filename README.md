@@ -104,7 +104,27 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 pnpm dev
 ```
 
-The app will be available at `http://localhost:3000`
+The frontend app will be available at `http://localhost:3000`.
+
+### Step 6: Run the Backend Server (New)
+
+The backend runs on Express.js at port 5000. It handles all reviews, analysis, and dashboard statistics APIs.
+
+```bash
+# Navigate to the backend directory
+cd backend
+
+# Install dependencies (if not already done)
+npm install
+
+# Start the backend server in development mode
+npm run dev
+
+# Or run with Node directly
+node server.js
+```
+
+The backend server will run on `http://localhost:5000`. Next.js proxy rewrites are already configured in [next.config.mjs](file:///c:/projects/GuestPulseAI/next.config.mjs) to forward all `/api` traffic seamlessly.
 
 ## ✅ Day 1 Verification Checklist
 
