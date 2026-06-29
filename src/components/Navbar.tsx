@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { BarChart3, Home, History, Search, LogOut, User, Sun, Moon } from 'lucide-react';
+import { BarChart3, Home, History, Search, LogOut, User, Sun, Moon, FileText } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useNavbar } from '@/context/NavbarContext';
@@ -179,6 +179,11 @@ export default function Navbar() {
             <Link href="/dashboard" className={getNavLinkClass('/dashboard')}>
               <BarChart3 className="w-4 h-4" />
               Dashboard
+            </Link>
+
+            <Link href="/reports" className={getNavLinkClass('/reports')}>
+              <FileText className="w-4 h-4" />
+              Reports
             </Link>
           </div>
         )}

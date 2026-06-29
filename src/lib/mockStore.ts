@@ -277,6 +277,201 @@ export const mockStore = {
       categoryBreakdown,
       sentimentTrend,
     };
+  },
+
+  getReportData: (homestayId: string, month?: string, year?: string) => {
+    const homestay = globalForMock.mockHomestays.find(h => h._id === homestayId);
+    let reviews = globalForMock.mockReviews.filter(r => r.homestayId === homestayId);
+
+    if (month && month !== 'all' && year && year !== 'all') {
+      const targetMonth = parseInt(month, 10) - 1;
+      const targetYear = parseInt(year, 10);
+      reviews = reviews.filter(r => {
+        const d = new Date(r.createdAt);
+        return d.getMonth() === targetMonth && d.getFullYear() === targetYear;
+      });
+    }
+
+    const totalReviews = reviews.length;
+    const positiveReviews = reviews.filter(r => r.sentiment === 'positive').length;
+    const negativeReviews = reviews.filter(r => r.sentiment === 'negative').length;
+    const guestSatisfactionRate = totalReviews > 0 ? Math.round((positiveReviews / totalReviews) * 100) : 100;
+
+    // Category Frequency
+    const categoryCounts: Record<string, number> = {};
+    reviews.forEach(r => {
+      categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
+    });
+
+    const categoryBreakdown = Object.entries(categoryCounts)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const topComplaints = reviews
+      .filter(r => r.sentiment === 'negative')
+      .map(r => r.category);
+
+    const mostAppreciated = reviews
+      .filter(r => r.sentiment === 'positive')
+      .map(r => r.category);
+
+    // Monthly Trend
+    const monthlyMap: Record<string, { month: string; positive: number; neutral: number; negative: number }> = {};
+    reviews.forEach(r => {
+      const d = new Date(r.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthlyMap[key]) {
+        monthlyMap[key] = { month: key, positive: 0, neutral: 0, negative: 0 };
+      }
+      monthlyMap[key][r.sentiment]++;
+    });
+
+    const aiSummary = `### Operational Summary for ${homestay?.homestayName || 'Homestay'}
+- **Positive Aspects**: Guests frequently appreciate the ${mostAppreciated[0] || 'cleanliness'} and overall comfortable ambiance.
+- **Recurring Complaints**: Minor issues noted around ${topComplaints[0] || 'amenities'} and response promptness.
+- **Actionable Improvement**: Prioritize routine maintenance checks and ensure key amenities are fully operational prior to guest arrival.`;
+
+    return {
+      homestayName: homestay?.homestayName || 'Sunset Paradise Villa',
+      guestSatisfactionRate,
+      totalReviews,
+      monthlyTrend: Object.values(monthlyMap),
+      topComplaints: Array.from(new Set(topComplaints)),
+      mostAppreciated: Array.from(new Set(mostAppreciated)),
+      categoryBreakdown,
+      aiSummary,
+    };
+  },
+
+  getPredictions: (homestayId: string) => {
+    const homestay = globalForMock.mockHomestays.find(h => h._id === homestayId);
+    return {
+      homestayName: homestay?.homestayName || 'Sunset Paradise Villa',
+      forecastPeriod: 'Upcoming Quarter (Q3/Q4)',
+      predictedSatisfactionRate: 91,
+      predictedRisingComplaints: ['check-in delays', 'wifi capacity'],
+      predictedTrendingPositives: ['scenic views', 'host warmth'],
+      seasonalInsights: 'High tourist inflow anticipated over the upcoming holiday weekend. Increase staff presence at arrival and verify Wi-Fi router stability.',
+      proactiveActionCards: [
+        {
+          id: 'card-1',
+          title: 'Check-in Bottleneck Risk',
+          description: 'Expected arrival surge on Friday — assign dedicated greeting staff or share automated check-in PIN codes in advance.',
+          severity: 'amber',
+          category: 'host',
+        },
+        {
+          id: 'card-2',
+          title: 'High Wi-Fi Load Expected',
+          description: 'Complaints tend to rise during high occupancy — test router bandwidth and reboot mesh extenders.',
+          severity: 'amber',
+          category: 'amenities',
+        },
+        {
+          id: 'card-3',
+          title: 'Positive Host Trend',
+          description: 'Host friendliness mentions are up 20% this month — showcase guest compliments on your booking profile.',
+          severity: 'green',
+          category: 'host',
+        },
+      ],
+      forecastTrend: [
+        { period: 'May', actual: 82, predicted: 80 },
+        { period: 'Jun', actual: 85, predicted: 84 },
+        { period: 'Jul (Current)', actual: 88, predicted: 87 },
+        { period: 'Aug (Forecast)', predicted: 91 },
+        { period: 'Sep (Forecast)', predicted: 93 },
+      ],
+      accuracyScore: 94,
+    };
+  },
+
+  getBenchmarking: (homestayId: string) => {
+    const homestay = globalForMock.mockHomestays.find(h => h._id === homestayId);
+    const homestayName = homestay?.homestayName || 'Sunset Paradise Villa';
+    return {
+      homestayName,
+      industryAverageSatisfaction: 78,
+      ownerSatisfaction: 88,
+      regionalCleanlinessScore: 82,
+      regionalHostScore: 85,
+      competitiveInsights: [
+        `Your property "${homestayName}" outperforms the regional industry average in guest satisfaction (88% vs 78%).`,
+        `Cleanliness ratings for your property are 6% higher than neighboring listings in your region.`,
+        `Wi-Fi responsiveness and check-in smoothness remain key areas where competitors are gaining guest praise.`,
+      ],
+      propertyComparisons: [
+        { propertyName: homestayName, satisfactionRate: 88, topCategory: 'host', status: 'Best Performer' as const },
+        { propertyName: 'Sunset Beachfront Villa B', satisfactionRate: 79, topCategory: 'location', status: 'Average' as const },
+        { propertyName: 'Mountain View Cottage C', satisfactionRate: 71, topCategory: 'cleanliness', status: 'Needs Attention' as const },
+      ],
+    };
+  },
+
+  mockActions: [
+    {
+      _id: 'act-sample-1',
+      homestayId: 'mock-homestay-id-1',
+      title: 'Upgraded Wi-Fi Mesh Routers',
+      category: 'amenities',
+      notes: 'Installed dual-band Wi-Fi routers across guest rooms and common areas.',
+      dateLogged: new Date(),
+      complaintReductionPercent: 34,
+      satisfactionImprovementPercent: 14,
+      aiImpactSummary: 'Complaints regarding Wi-Fi speed dropped by 34% following mesh router installation.',
+    },
+    {
+      _id: 'act-sample-2',
+      homestayId: 'mock-homestay-id-1',
+      title: 'Implemented Digital Self Check-in PIN Codes',
+      category: 'host',
+      notes: 'Automated guest arrival instructions via WhatsApp.',
+      dateLogged: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      complaintReductionPercent: 28,
+      satisfactionImprovementPercent: 12,
+      aiImpactSummary: 'Check-in delays decreased by 28% after deploying automated PIN code arrival instructions.',
+    },
+  ],
+
+  getLoggedActions: function(homestayId: string) {
+    return this.mockActions.filter(a => a.homestayId === homestayId || true);
+  },
+
+  createLoggedAction: function(homestayId: string, data: { title: string; category: string; notes?: string }) {
+    const newAction = {
+      _id: `act-${Date.now()}`,
+      homestayId,
+      title: data.title,
+      category: data.category,
+      notes: data.notes || '',
+      dateLogged: new Date(),
+      complaintReductionPercent: 30,
+      satisfactionImprovementPercent: 15,
+      aiImpactSummary: `Logging operational change "${data.title}" improved guest sentiment in ${data.category}.`,
+    };
+    this.mockActions.unshift(newAction);
+    return newAction;
+  },
+
+  getExperienceForecast: function(homestayId: string) {
+    const homestay = globalForMock.mockHomestays.find(h => h._id === homestayId);
+    return {
+      homestayName: homestay?.homestayName || 'Sunset Paradise Villa',
+      predictedNPS: 78,
+      npsChange: 3,
+      repeatBookingProbability: 72,
+      loyaltyRiskLevel: 'green' as const,
+      loyaltyInsights: [
+        'Guests who praise staff friendliness are 40% more likely to return.',
+        'Repeat bookings may rise by 18% during upcoming holiday seasons due to strong location appeal.',
+      ],
+      npsTrend: [
+        { period: 'Q1', historicalNPS: 70, predictedNPS: 70 },
+        { period: 'Q2', historicalNPS: 75, predictedNPS: 74 },
+        { period: 'Q3 (Current)', historicalNPS: 78, predictedNPS: 78 },
+        { period: 'Q4 (Forecast)', predictedNPS: 81 },
+      ],
+    };
   }
 };
 

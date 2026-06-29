@@ -41,7 +41,7 @@ export default function ReviewCard({ review, onClick }: ReviewCardProps) {
       </div>
 
       <p className="text-foreground/90 text-sm line-clamp-2 mb-3 leading-relaxed">
-        {review.text}
+        {review.text || review.reviewText || ''}
       </p>
 
       <div className="flex items-center justify-between text-xs text-muted-foreground">

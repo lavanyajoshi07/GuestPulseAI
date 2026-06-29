@@ -12,6 +12,7 @@ export interface IReview extends Document {
   keyPoints?: string[]; // for backward compatibility
   summary: string;
   suggestedResponse: string;
+  improvementSuggestion?: string;
   analysis?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
@@ -70,6 +71,10 @@ const ReviewSchema = new Schema<IReview>(
       type: String,
       default: '',
     },
+    improvementSuggestion: {
+      type: String,
+      default: '',
+    },
     analysis: {
       type: Schema.Types.Mixed,
       default: {},
@@ -90,6 +95,9 @@ ReviewSchema.virtual('text')
   .set(function (this: IReview, val: string) {
     this.reviewText = val;
   });
+
+// Compound index for tenant isolation and date sorting performance
+ReviewSchema.index({ homestayId: 1, createdAt: -1 });
 
 // Prevent model recompilation
 const Review =

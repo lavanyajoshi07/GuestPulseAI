@@ -44,7 +44,7 @@ export async function exportDashboardAsPDF(stats: any): Promise<Uint8Array> {
 
   // Title
   doc.setFontSize(20);
-  doc.text('ReviewLens AI - Dashboard Report', 14, 22);
+  doc.text('GuestPulse AI - Dashboard Report', 14, 22);
 
   // Date
   doc.setFontSize(10);
@@ -105,7 +105,128 @@ export async function exportDashboardAsPDF(stats: any): Promise<Uint8Array> {
     });
   }
 
-  return doc.output('arraybuffer') as Uint8Array;
+  return new Uint8Array(doc.output('arraybuffer'));
+}
+
+export function sanitizeFilename(homestayName: string, extension: string): string {
+  const cleanName = (homestayName || 'Homestay').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const dateStr = new Date().toISOString().split('T')[0];
+  return `GuestPulse_Report_${cleanName}_${dateStr}.${extension}`;
+}
+
+export async function exportReportAsPDF(reportData: any, homestayName: string): Promise<Uint8Array> {
+  const doc = new jsPDF();
+
+  // Header Branding
+  doc.setFontSize(22);
+  doc.setTextColor(37, 99, 235); // Blue-600
+  doc.text('GuestPulse AI', 14, 20);
+
+  doc.setFontSize(14);
+  doc.setTextColor(75, 85, 99);
+  doc.text(`Executive Report: ${homestayName}`, 14, 28);
+
+  doc.setFontSize(10);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 34);
+
+  let yPos = 45;
+
+  // Executive Metrics Table
+  doc.setFontSize(13);
+  doc.setTextColor(17, 24, 39);
+  doc.text('Performance Summary', 14, yPos);
+  yPos += 8;
+
+  const metricsBody = [
+    ['Guest Satisfaction Rate', `${reportData.guestSatisfactionRate || 100}%`],
+    ['Total Analyzed Reviews', `${reportData.totalReviews || 0}`],
+    ['Top Appreciated Features', (reportData.mostAppreciated || []).join(', ') || 'N/A'],
+    ['Primary Areas for Improvement', (reportData.topComplaints || []).join(', ') || 'None reported'],
+  ];
+
+  (doc as any).autoTable({
+    startY: yPos,
+    head: [['Metric', 'Detail']],
+    body: metricsBody,
+    theme: 'grid',
+    headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+    margin: { left: 14, right: 14 },
+  });
+
+  yPos = (doc as any).lastAutoTable.finalY + 14;
+
+  // AI Business Summary Section
+  if (reportData.aiSummary) {
+    doc.setFontSize(13);
+    doc.setTextColor(17, 24, 39);
+    doc.text('Gemini AI Executive Insights', 14, yPos);
+    yPos += 8;
+
+    doc.setFontSize(10);
+    doc.setTextColor(55, 65, 81);
+
+    // Split AI Summary text across PDF lines safely
+    const cleanSummary = reportData.aiSummary.replace(/###/g, '').trim();
+    const splitText = doc.splitTextToSize(cleanSummary, 180);
+    
+    // Check page space
+    if (yPos + splitText.length * 5 > 280) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    doc.text(splitText, 14, yPos);
+    yPos += splitText.length * 5 + 12;
+  }
+
+  // Category Breakdown Table
+  if (reportData.categoryBreakdown && reportData.categoryBreakdown.length > 0) {
+    if (yPos > 230) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    doc.setFontSize(13);
+    doc.setTextColor(17, 24, 39);
+    doc.text('Category Breakdown', 14, yPos);
+    yPos += 8;
+
+    const catData = reportData.categoryBreakdown.map((c: any) => [c.category, c.count]);
+
+    (doc as any).autoTable({
+      startY: yPos,
+      head: [['Category', 'Feedback Count']],
+      body: catData,
+      theme: 'grid',
+      headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+      margin: { left: 14, right: 14 },
+    });
+  }
+
+  return new Uint8Array(doc.output('arraybuffer'));
+}
+
+export async function exportReportAsCSV(reportData: any, homestayName: string): Promise<string> {
+  const summaryRows = [
+    { Section: 'Property', Metric: 'Homestay Name', Value: homestayName },
+    { Section: 'Overview', Metric: 'Guest Satisfaction Rate', Value: `${reportData.guestSatisfactionRate}%` },
+    { Section: 'Overview', Metric: 'Total Reviews Analyzed', Value: reportData.totalReviews },
+    { Section: 'Highlights', Metric: 'Most Appreciated Features', Value: (reportData.mostAppreciated || []).join('; ') },
+    { Section: 'Highlights', Metric: 'Top Complaint Categories', Value: (reportData.topComplaints || []).join('; ') },
+  ];
+
+  if (reportData.categoryBreakdown) {
+    reportData.categoryBreakdown.forEach((c: any) => {
+      summaryRows.push({
+        Section: 'Category Breakdown',
+        Metric: c.category,
+        Value: c.count,
+      });
+    });
+  }
+
+  return Papa.unparse(summaryRows);
 }
 
 export function downloadFile(content: string | Uint8Array, filename: string, type: string) {
@@ -123,3 +244,4 @@ export function downloadFile(content: string | Uint8Array, filename: string, typ
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+

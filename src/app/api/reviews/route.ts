@@ -116,11 +116,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Fetch reviews
     try {
-      const reviews = await Review.find(filter)
+      const rawReviews = await Review.find(filter)
         .sort({ createdAt: -1 })
         .skip(parsedSkip)
         .limit(parsedLimit)
         .lean();
+
+      const reviews = rawReviews.map((r: any) => ({
+        ...r,
+        text: r.text || r.reviewText || '',
+      }));
 
       const total = await Review.countDocuments(filter);
 

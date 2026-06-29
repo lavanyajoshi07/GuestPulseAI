@@ -14,8 +14,10 @@ export interface ReviewAnalysis {
   category: Category;
   summary: string;
   keywords: string[];
+  keyPoints?: string[]; // for backward compatibility
   response?: string; // Professional response suggestion
   suggestedResponse?: string;
+  improvementSuggestion?: string; // Owner-centric actionable improvement advice
   sentimentScore?: number;
 }
 
@@ -28,7 +30,81 @@ export interface AnalysisResult {
   keyPoints?: string[]; // for backward compatibility
   summary: string;
   suggestedResponse: string;
+  improvementSuggestion?: string;
   createdAt: Date;
+}
+
+export interface OwnerAnalysisResult {
+  sentimentOverview: {
+    positive: number;
+    neutral: number;
+    negative: number;
+  };
+  topComplaints: string[];
+  topAppreciated: string[];
+  aiSuggestions: string;
+  totalReviews: number;
+  categoryBreakdown?: Array<{ category: string; count: number }>;
+}
+
+export interface ProactiveActionCard {
+  id: string;
+  title: string;
+  description: string;
+  severity: 'green' | 'amber' | 'red';
+  category: string;
+  actionTaken?: boolean;
+}
+
+export interface PredictiveAnalytics {
+  homestayName: string;
+  forecastPeriod: string;
+  predictedSatisfactionRate: number;
+  predictedRisingComplaints: string[];
+  predictedTrendingPositives: string[];
+  seasonalInsights: string;
+  proactiveActionCards: ProactiveActionCard[];
+  forecastTrend: Array<{ period: string; actual?: number; predicted: number }>;
+  accuracyScore: number;
+}
+
+export interface PropertyComparison {
+  propertyName: string;
+  satisfactionRate: number;
+  topCategory: string;
+  status: 'Best Performer' | 'Needs Attention' | 'Average';
+}
+
+export interface BenchmarkingData {
+  homestayName: string;
+  industryAverageSatisfaction: number;
+  ownerSatisfaction: number;
+  regionalCleanlinessScore: number;
+  regionalHostScore: number;
+  competitiveInsights: string[];
+  propertyComparisons: PropertyComparison[];
+}
+
+export interface LoggedAction {
+  _id?: string;
+  homestayId?: string;
+  title: string;
+  category: string;
+  notes?: string;
+  dateLogged: Date | string;
+  complaintReductionPercent: number;
+  satisfactionImprovementPercent: number;
+  aiImpactSummary: string;
+}
+
+export interface GuestExperienceForecast {
+  homestayName: string;
+  predictedNPS: number;
+  npsChange: number;
+  repeatBookingProbability: number;
+  loyaltyRiskLevel: 'green' | 'amber' | 'red';
+  loyaltyInsights: string[];
+  npsTrend: Array<{ period: string; historicalNPS?: number; predictedNPS: number }>;
 }
 
 export interface Review {
@@ -44,6 +120,7 @@ export interface Review {
   keyPoints?: string[]; // for backward compatibility
   summary: string;
   suggestedResponse: string;
+  improvementSuggestion?: string;
   analysis?: AnalysisResult;
   createdAt: Date;
   updatedAt?: Date;
