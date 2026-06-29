@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
+import connectDB from '@/lib/mongodb';
+import Homestay from '@/models/Homestay';
+import { mockStore } from '@/lib/mockStore';
 
 export interface AuthenticatedRequest extends NextRequest {
   userId?: string;
   userEmail?: string;
+  homestayId?: string;
 }
 
 export async function withAuth(
@@ -13,7 +17,12 @@ export async function withAuth(
     try {
       // Get token from header
       const authHeader = req.headers.get('Authorization');
-      const token = extractTokenFromHeader(authHeader || '');
+      let token = extractTokenFromHeader(authHeader || '');
+
+      // Fallback to cookie if no header
+      if (!token) {
+        token = req.cookies.get('auth_token')?.value || '';
+      }
 
       if (!token) {
         return NextResponse.json(
@@ -45,6 +54,28 @@ export async function withAuth(
       authenticatedReq.userId = payload.userId;
       authenticatedReq.userEmail = payload.email;
 
+      // Retrieve owner's homestay (for multi-tenant scoping)
+      const isMock = !process.env.MONGODB_URI || process.env.MONGODB_URI.includes('YOUR_USERNAME') || process.env.MONGODB_URI.includes('cluster-name');
+      if (isMock) {
+        // Access mock store dynamically to see if user has a homestay
+        const mockStoreAny = mockStore as any;
+        const homestays = mockStoreAny.getHomestays ? mockStoreAny.getHomestays() : [];
+        const homestay = homestays.find((h: any) => h.ownerId === payload.userId);
+        if (homestay) {
+          authenticatedReq.homestayId = homestay._id;
+        }
+      } else {
+        try {
+          await connectDB();
+          const homestay = await Homestay.findOne({ ownerId: payload.userId }).lean();
+          if (homestay) {
+            authenticatedReq.homestayId = (homestay as any)._id.toString();
+          }
+        } catch (dbError) {
+          console.error('[Auth Middleware] Database error finding homestay:', dbError);
+        }
+      }
+
       // Call handler
       return await handler(authenticatedReq);
     } catch (error) {
@@ -60,3 +91,4 @@ export async function withAuth(
     }
   };
 }
+

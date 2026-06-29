@@ -37,18 +37,13 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Hash password before saving
-UserSchema.pre<IUser>('save', async function (next) {
+UserSchema.pre<IUser>('save', async function () {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
 
-  try {
-    const salt = await bcryptjs.genSalt(10);
-    this.password = await bcryptjs.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error as any);
-  }
+  const salt = await bcryptjs.genSalt(10);
+  this.password = await bcryptjs.hash(this.password, salt);
 });
 
 // Method to compare passwords
@@ -56,7 +51,10 @@ UserSchema.methods.comparePassword = async function (password: string): Promise<
   return await bcryptjs.compare(password, this.password);
 };
 
-// Prevent model recompilation
+if (process.env.NODE_ENV === 'development') {
+  delete mongoose.models.User;
+}
+
 const User =
   mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

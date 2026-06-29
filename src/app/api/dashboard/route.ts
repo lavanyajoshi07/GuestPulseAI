@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { getDashboardStats } from '@/lib/db';
+import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
 import { mockStore } from '@/lib/mockStore';
 import {
   DatabaseError,
@@ -11,7 +12,20 @@ import {
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
+  if (!request.homestayId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Onboarding required. Please setup your homestay first.',
+        code: 'ONBOARDING_REQUIRED',
+      },
+      { status: 403 }
+    );
+  }
+
+  const homestayId = request.homestayId;
+
   try {
     // Connect to database
     let dbConn;
@@ -22,16 +36,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (dbConn === null) {
-      const stats = mockStore.getDashboardStats();
+      const stats = mockStore.getDashboardStats(homestayId);
       return NextResponse.json({
         success: true,
         data: stats,
       });
     }
 
-    // Get dashboard statistics
+    // Get dashboard statistics scoped by homestayId
     try {
-      const stats = await getDashboardStats();
+      const stats = await getDashboardStats(homestayId);
 
       return NextResponse.json({
         success: true,
@@ -48,4 +62,5 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(errorResponse, { status: httpStatus });
   }
-}
+});
+

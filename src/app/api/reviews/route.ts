@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
+import mongoose from 'mongoose';
+import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
 import { mockStore } from '@/lib/mockStore';
 import {
   validatePaginationParams,
@@ -20,7 +22,20 @@ import type { Sentiment, Category } from '@/types';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
+  if (!request.homestayId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Onboarding required. Please setup your homestay first.',
+        code: 'ONBOARDING_REQUIRED',
+      },
+      { status: 403 }
+    );
+  }
+
+  const homestayId = request.homestayId;
+
   try {
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -78,7 +93,7 @@ export async function GET(request: NextRequest) {
       if (sentiment) filter.sentiment = sentiment.toLowerCase();
       if (category) filter.category = category.toLowerCase();
 
-      const { reviews, total } = mockStore.getReviews(filter, parsedSkip, parsedLimit);
+      const { reviews, total } = mockStore.getReviews(homestayId, filter, parsedSkip, parsedLimit);
 
       return NextResponse.json({
         success: true,
@@ -92,8 +107,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Build filter
-    const filter: Record<string, any> = {};
+    // Build filter scoped strictly by homestayId
+    const filter: Record<string, any> = {
+      homestayId: new mongoose.Types.ObjectId(homestayId),
+    };
     if (sentiment) filter.sentiment = sentiment.toLowerCase();
     if (category) filter.category = category.toLowerCase();
 
@@ -128,4 +145,5 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(errorResponse, { status: httpStatus });
   }
-}
+});
+

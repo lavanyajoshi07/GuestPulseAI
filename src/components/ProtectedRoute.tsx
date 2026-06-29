@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -11,13 +11,23 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/auth/login');
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.push('/auth/login');
+      } else if (isAuthenticated && user && !user.hasHomestay) {
+        // Skip redirect if already on onboarding page to prevent redirect loops
+        if (pathname !== '/onboarding') {
+          router.push('/onboarding');
+        }
+      } else if (isAuthenticated && user && user.hasHomestay && pathname === '/onboarding') {
+        router.push('/dashboard');
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router, pathname]);
 
   if (isLoading) {
     return (
@@ -34,5 +44,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return null;
   }
 
+  // Block rendering dashboard/history if user has no homestay and isn't on onboarding
+  if (user && !user.hasHomestay && pathname !== '/onboarding') {
+    return null;
+  }
+
   return <>{children}</>;
 }
+

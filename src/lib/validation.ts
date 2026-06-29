@@ -48,13 +48,12 @@ export function validateSentiment(sentiment: string): void {
 
 // Category validation
 export const VALID_CATEGORIES = [
+  'food',
   'cleanliness',
-  'communication',
   'location',
-  'amenities',
   'host',
   'value',
-  'other',
+  'experience',
 ] as const;
 
 export function validateCategory(category: string): void {

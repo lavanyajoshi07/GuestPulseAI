@@ -2,19 +2,20 @@
 export type Sentiment = 'positive' | 'neutral' | 'negative';
 
 export type Category =
+  | 'food'
   | 'cleanliness'
-  | 'communication'
   | 'location'
-  | 'amenities'
   | 'host'
   | 'value'
-  | 'other';
+  | 'experience';
 
 export interface ReviewAnalysis {
   sentiment: Sentiment;
   category: Category;
-  response: string;
-  keyPoints?: string[];
+  summary: string;
+  keywords: string[];
+  response?: string; // Professional response suggestion
+  suggestedResponse?: string;
   sentimentScore?: number;
 }
 
@@ -23,18 +24,25 @@ export interface AnalysisResult {
   sentiment: Sentiment;
   sentimentScore?: number;
   category: Category;
-  keyPoints?: string[];
+  keywords?: string[];
+  keyPoints?: string[]; // for backward compatibility
+  summary: string;
   suggestedResponse: string;
   createdAt: Date;
 }
 
 export interface Review {
   _id: string;
-  text: string;
+  homestayId: string;
+  platform?: string;
+  reviewText: string;
+  text: string; // virtual/backward compatibility
   sentiment: Sentiment;
   sentimentScore?: number;
   category: Category;
-  keyPoints?: string[];
+  keywords?: string[];
+  keyPoints?: string[]; // for backward compatibility
+  summary: string;
   suggestedResponse: string;
   analysis?: AnalysisResult;
   createdAt: Date;
@@ -43,11 +51,16 @@ export interface Review {
 
 export interface ReviewDocument {
   _id?: string;
+  homestayId: string;
+  platform?: string;
+  reviewText: string;
   text: string;
   sentiment: Sentiment;
   sentimentScore?: number;
   category: Category;
+  keywords?: string[];
   keyPoints?: string[];
+  summary: string;
   suggestedResponse: string;
   analysis?: AnalysisResult;
   createdAt: Date;
@@ -60,8 +73,8 @@ export interface DashboardStats {
   neutralReviews: number;
   negativeReviews: number;
   averageSentimentScore: number;
-  mostCommonCategory: Category;
-  categoryBreakdown: Array<{ category: Category; count: number }>;
+  mostCommonCategory: Category | 'other';
+  categoryBreakdown: Array<{ category: Category | string; count: number }>;
   sentimentTrend: Array<{ date: string; positive: number; neutral: number; negative: number }>;
 }
 
@@ -70,4 +83,11 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+}
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  hasHomestay?: boolean;
 }

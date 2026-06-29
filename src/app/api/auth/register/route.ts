@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
           id: user._id,
           email: user.email,
           name: user.name,
+          hasHomestay: false,
         },
         message: 'Registration successful',
       });
@@ -90,6 +91,11 @@ export async function POST(request: NextRequest) {
 
     // Create user
     try {
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        throw new ValidationError('Email already registered', 'email');
+      }
+
       const user = new User({
         email: email.toLowerCase(),
         password,
@@ -112,12 +118,14 @@ export async function POST(request: NextRequest) {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
+          hasHomestay: false,
         },
         message: 'Registration successful',
       });
     } catch (error) {
       if (error instanceof ValidationError) throw error;
-      throw new DatabaseError('Failed to create user');
+      console.error('[Register API] User save error:', error);
+      throw new DatabaseError(error instanceof Error ? error.message : 'Failed to create user');
     }
   } catch (error) {
     logError(error, 'Register API');

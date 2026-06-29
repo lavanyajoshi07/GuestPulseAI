@@ -1,20 +1,23 @@
-// Database Query Utilities for ReviewLens AI
+// Database Query Utilities for GuestPulse AI
 
 import connectDB from './mongodb';
 import Review from '@/models/Review';
 import type { Sentiment, Category } from '@/types';
+import mongoose from 'mongoose';
 
-// Get all reviews with pagination
-export async function getAllReviews(skip: number = 0, limit: number = 10) {
+// Get all reviews with pagination scoped by homestayId
+export async function getAllReviews(homestayId: string, skip: number = 0, limit: number = 10) {
   await connectDB();
 
-  const reviews = await Review.find()
+  const filter = { homestayId: new mongoose.Types.ObjectId(homestayId) };
+
+  const reviews = await Review.find(filter)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
     .lean();
 
-  const total = await Review.countDocuments();
+  const total = await Review.countDocuments(filter);
 
   return {
     reviews,
@@ -25,42 +28,54 @@ export async function getAllReviews(skip: number = 0, limit: number = 10) {
   };
 }
 
-// Get reviews by sentiment
-export async function getReviewsBySentiment(sentiment: Sentiment) {
+// Get reviews by sentiment scoped by homestayId
+export async function getReviewsBySentiment(homestayId: string, sentiment: Sentiment) {
   await connectDB();
 
-  const reviews = await Review.find({ sentiment })
+  const reviews = await Review.find({
+    homestayId: new mongoose.Types.ObjectId(homestayId),
+    sentiment,
+  })
     .sort({ createdAt: -1 })
     .lean();
 
   return reviews;
 }
 
-// Get reviews by category
-export async function getReviewsByCategory(category: Category) {
+// Get reviews by category scoped by homestayId
+export async function getReviewsByCategory(homestayId: string, category: Category) {
   await connectDB();
 
-  const reviews = await Review.find({ category })
+  const reviews = await Review.find({
+    homestayId: new mongoose.Types.ObjectId(homestayId),
+    category,
+  })
     .sort({ createdAt: -1 })
     .lean();
 
   return reviews;
 }
 
-// Get single review by ID
-export async function getReviewById(id: string) {
+// Get single review by ID scoped by homestayId
+export async function getReviewById(homestayId: string, id: string) {
   await connectDB();
 
-  const review = await Review.findById(id);
+  const review = await Review.findOne({
+    _id: id,
+    homestayId: new mongoose.Types.ObjectId(homestayId),
+  });
 
   return review;
 }
 
-// Get review count by sentiment
-export async function getCountBySentiment() {
+// Get review count by sentiment scoped by homestayId
+export async function getCountBySentiment(homestayId: string) {
   await connectDB();
 
   const counts = await Review.aggregate([
+    {
+      $match: { homestayId: new mongoose.Types.ObjectId(homestayId) },
+    },
     {
       $group: {
         _id: '$sentiment',
@@ -72,11 +87,14 @@ export async function getCountBySentiment() {
   return counts;
 }
 
-// Get review count by category
-export async function getCountByCategory() {
+// Get review count by category scoped by homestayId
+export async function getCountByCategory(homestayId: string) {
   await connectDB();
 
   const counts = await Review.aggregate([
+    {
+      $match: { homestayId: new mongoose.Types.ObjectId(homestayId) },
+    },
     {
       $group: {
         _id: '$category',
@@ -91,11 +109,17 @@ export async function getCountByCategory() {
   return counts;
 }
 
-// Calculate dashboard statistics
-export async function getDashboardStats() {
+// Calculate dashboard statistics scoped by homestayId
+export async function getDashboardStats(homestayId: string) {
   await connectDB();
 
-  const totalReviews = await Review.countDocuments();
+  const matchStage = {
+    $match: { homestayId: new mongoose.Types.ObjectId(homestayId) },
+  };
+
+  const totalReviews = await Review.countDocuments({
+    homestayId: new mongoose.Types.ObjectId(homestayId),
+  });
 
   if (totalReviews === 0) {
     return {
@@ -112,6 +136,7 @@ export async function getDashboardStats() {
 
   // Get sentiment breakdown
   const sentimentCounts = await Review.aggregate([
+    matchStage,
     {
       $group: {
         _id: '$sentiment',
@@ -127,6 +152,7 @@ export async function getDashboardStats() {
 
   // Get category breakdown
   const categoryCounts = await Review.aggregate([
+    matchStage,
     {
       $group: {
         _id: '$category',
@@ -145,6 +171,7 @@ export async function getDashboardStats() {
 
   // Calculate average sentiment score
   const avgScore = await Review.aggregate([
+    matchStage,
     {
       $group: {
         _id: null,
@@ -161,6 +188,7 @@ export async function getDashboardStats() {
   const trendData = await Review.aggregate([
     {
       $match: {
+        homestayId: new mongoose.Types.ObjectId(homestayId),
         createdAt: { $gte: sevenDaysAgo },
       },
     },
@@ -181,19 +209,25 @@ export async function getDashboardStats() {
   // Transform trend data
   const trendMap: Record<string, any> = {};
 
+  // Pre-populate last 7 days to ensure a complete chart trend even for empty dates
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    trendMap[dateStr] = {
+      date: dateStr,
+      positive: 0,
+      neutral: 0,
+      negative: 0,
+    };
+  }
+
   trendData.forEach(({ _id, count }: any) => {
     const { date, sentiment } = _id;
-
-    if (!trendMap[date]) {
-      trendMap[date] = {
-        date,
-        positive: 0,
-        neutral: 0,
-        negative: 0,
-      };
+    if (trendMap[date]) {
+      trendMap[date][sentiment] = count;
     }
-
-    trendMap[date][sentiment] = count;
   });
 
   const sentimentTrend = Object.values(trendMap);
@@ -212,3 +246,4 @@ export async function getDashboardStats() {
     sentimentTrend,
   };
 }
+

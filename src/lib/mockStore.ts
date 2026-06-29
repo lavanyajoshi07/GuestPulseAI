@@ -11,13 +11,29 @@ interface MockUser {
   createdAt: Date;
 }
 
+interface MockHomestay {
+  _id: string;
+  ownerId: string;
+  homestayName: string;
+  location: string;
+  propertyType: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface InMemReview {
   _id: string;
-  text: string;
+  homestayId: string;
+  platform: string;
+  reviewText: string;
+  text: string; // virtual field getter/setter simulated
   sentiment: Sentiment;
   sentimentScore: number;
   category: Category;
-  keyPoints: string[];
+  keywords: string[];
+  keyPoints?: string[]; // for backward compatibility
+  summary: string;
   suggestedResponse: string;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +42,7 @@ interface InMemReview {
 // Global declaration to persist mock data across Next.js hot-reloads in dev
 const globalForMock = global as unknown as {
   mockUsers: MockUser[];
+  mockHomestays: MockHomestay[];
   mockReviews: InMemReview[];
 };
 
@@ -45,23 +62,52 @@ if (!globalForMock.mockUsers) {
   ];
 }
 
+if (!globalForMock.mockHomestays) {
+  // Add a default homestay for the default user john@example.com
+  globalForMock.mockHomestays = [
+    {
+      _id: 'mock-homestay-1',
+      ownerId: 'mock-user-1',
+      homestayName: 'Sunset Paradise Villa',
+      location: 'Bali, Indonesia',
+      propertyType: 'Villa',
+      description: 'A beautiful beachside property overlooking the sunset.',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+  ];
+}
+
 if (!globalForMock.mockReviews) {
   const generated = generateMockReviews();
-  globalForMock.mockReviews = generated.map((r, index) => ({
-    _id: `mock-review-${index + 1}`,
-    text: r.text,
-    sentiment: r.sentiment as Sentiment,
-    sentimentScore: 0.75, // Default mock score
-    category: r.category as Category,
-    keyPoints: r.keyPoints,
-    suggestedResponse: r.suggestedResponse,
-    createdAt: r.createdAt,
-    updatedAt: r.createdAt,
-  }));
+  globalForMock.mockReviews = generated.map((r, index) => {
+    // Map old categories to spec categories
+    let category = r.category as string;
+    if (category === 'communication') category = 'host';
+    else if (category === 'amenities' || category === 'other') category = 'experience';
+
+    return {
+      _id: `mock-review-${index + 1}`,
+      homestayId: 'mock-homestay-1', // Default reviews belong to John's homestay
+      platform: 'Manual',
+      reviewText: r.text,
+      text: r.text,
+      sentiment: r.sentiment as Sentiment,
+      sentimentScore: 0.75, // Default mock score
+      category: category as Category,
+      keywords: r.keyPoints,
+      keyPoints: r.keyPoints,
+      summary: r.text.substring(0, 60) + '...',
+      suggestedResponse: r.suggestedResponse,
+      createdAt: r.createdAt,
+      updatedAt: r.createdAt,
+    };
+  });
 }
 
 export const mockStore = {
   getUsers: () => globalForMock.mockUsers,
+  getHomestays: () => globalForMock.mockHomestays,
   getReviewsList: () => globalForMock.mockReviews,
 
   findUserByEmail: (email: string) => {
@@ -82,21 +128,53 @@ export const mockStore = {
     return newUser;
   },
 
+  getHomestayByOwnerId: (ownerId: string) => {
+    return globalForMock.mockHomestays.find(h => h.ownerId === ownerId);
+  },
+
+  createHomestay: (
+    ownerId: string,
+    homestayName: string,
+    location: string,
+    propertyType: string,
+    description?: string
+  ) => {
+    const newHomestay: MockHomestay = {
+      _id: `mock-homestay-${Date.now()}`,
+      ownerId,
+      homestayName,
+      location,
+      propertyType,
+      description,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    globalForMock.mockHomestays.push(newHomestay);
+    return newHomestay;
+  },
+
   createReview: (
-    text: string,
+    homestayId: string,
+    reviewText: string,
     sentiment: Sentiment,
     category: Category,
     sentimentScore: number,
-    keyPoints: string[],
-    suggestedResponse: string
+    keywords: string[],
+    suggestedResponse: string,
+    summary?: string
   ) => {
     const newReview: InMemReview = {
       _id: `mock-review-${Date.now()}`,
-      text,
+      homestayId,
+      platform: 'Manual',
+      reviewText,
+      text: reviewText,
       sentiment,
       sentimentScore,
       category,
-      keyPoints,
+      keywords,
+      keyPoints: keywords,
+      summary: summary || reviewText.substring(0, 60) + '...',
       suggestedResponse,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -105,8 +183,9 @@ export const mockStore = {
     return newReview;
   },
 
-  getReviews: (filter: { sentiment?: string; category?: string }, skip = 0, limit = 10) => {
-    let list = [...globalForMock.mockReviews];
+  getReviews: (homestayId: string, filter: { sentiment?: string; category?: string }, skip = 0, limit = 10) => {
+    // Filter reviews strictly belonging to the given homestayId
+    let list = globalForMock.mockReviews.filter(r => r.homestayId === homestayId);
 
     if (filter.sentiment) {
       list = list.filter(r => r.sentiment === filter.sentiment);
@@ -124,8 +203,9 @@ export const mockStore = {
     };
   },
 
-  getDashboardStats: () => {
-    const reviews = globalForMock.mockReviews;
+  getDashboardStats: (homestayId: string) => {
+    // Scope stats strictly to reviews of the given homestayId
+    const reviews = globalForMock.mockReviews.filter(r => r.homestayId === homestayId);
     const totalReviews = reviews.length;
 
     if (totalReviews === 0) {
@@ -144,7 +224,12 @@ export const mockStore = {
     const positiveReviews = reviews.filter(r => r.sentiment === 'positive').length;
     const neutralReviews = reviews.filter(r => r.sentiment === 'neutral').length;
     const negativeReviews = reviews.filter(r => r.sentiment === 'negative').length;
-    const averageSentimentScore = 0.82; // Mock avg score
+    
+    let totalScore = 0;
+    reviews.forEach(r => {
+      totalScore += r.sentimentScore;
+    });
+    const averageSentimentScore = totalReviews > 0 ? Number((totalScore / totalReviews).toFixed(2)) : 0.75;
 
     // Category breakdown
     const categoryCounts: Record<string, number> = {};
@@ -194,3 +279,4 @@ export const mockStore = {
     };
   }
 };
+

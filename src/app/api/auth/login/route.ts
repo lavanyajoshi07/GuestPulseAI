@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import Homestay from '@/models/Homestay';
 import { generateToken, setAuthCookie } from '@/lib/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
 import { mockStore } from '@/lib/mockStore';
@@ -63,6 +64,8 @@ export async function POST(request: NextRequest) {
       const token = await generateToken(user._id, user.email);
       await setAuthCookie(token);
 
+      const homestay = mockStore.getHomestayByOwnerId(user._id);
+
       return NextResponse.json({
         success: true,
         token,
@@ -70,6 +73,7 @@ export async function POST(request: NextRequest) {
           id: user._id,
           email: user.email,
           name: user.name,
+          hasHomestay: !!homestay,
         },
         message: 'Login successful',
       });
@@ -106,6 +110,9 @@ export async function POST(request: NextRequest) {
     // Set auth cookie
     await setAuthCookie(token);
 
+    // Check if user has homestay
+    const homestay = await Homestay.findOne({ ownerId: user._id });
+
     // Return response
     return NextResponse.json({
       success: true,
@@ -114,6 +121,7 @@ export async function POST(request: NextRequest) {
         id: user._id.toString(),
         email: user.email,
         name: user.name,
+        hasHomestay: !!homestay,
       },
       message: 'Login successful',
     });

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'ReviewLens AI - Homestay Review Analysis',
+  title: 'GuestPulseAI - Homestay Review Analysis',
   description: 'AI-powered review analysis tool for homestays and eco-tourism properties',
   generator: 'v0.app',
   icons: {

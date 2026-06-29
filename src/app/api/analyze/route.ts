@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeReviewWithGemini } from '@/lib/gemini';
 import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
+import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
 import { mockStore } from '@/lib/mockStore';
 import {
   validateAnalyzeRequest,
-  validateReviewText,
 } from '@/lib/validation';
 import {
   ValidationError,
@@ -16,16 +16,30 @@ import {
   getHttpStatus,
   logError,
 } from '@/lib/errors';
-import type { AnalysisResult } from '@/types';
+import type { AnalysisResult, Category } from '@/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: AuthenticatedRequest) => {
+  // Check if homestayId exists
+  if (!request.homestayId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Onboarding required. Please setup your homestay first.',
+        code: 'ONBOARDING_REQUIRED',
+      },
+      { status: 403 }
+    );
+  }
+
+  const homestayId = request.homestayId;
+
   // Apply rate limiting
-  const ip = getClientIp(request);
   const rateLimitError = rateLimitMiddleware(RATE_LIMIT_CONFIGS.analyze)(request);
   if (rateLimitError) return rateLimitError;
+
   try {
     // Parse request body
     let body;
@@ -42,19 +56,25 @@ export async function POST(request: NextRequest) {
     if (isMock) {
       const lowerReview = review.toLowerCase();
       let sentiment: 'positive' | 'neutral' | 'negative' = 'positive';
-      let category: 'cleanliness' | 'communication' | 'location' | 'amenities' | 'host' | 'value' | 'other' = 'other';
-      let keyPoints = ['Comfortable rooms', 'Decent service'];
+      let category: Category = 'experience';
+      let keywords = ['Comfortable rooms', 'Decent service'];
       let responseText = 'Thank you for your feedback! We are glad you enjoyed your stay.';
 
       if (lowerReview.includes('dirty') || lowerReview.includes('cleanliness') || lowerReview.includes('spotless') || lowerReview.includes('clean')) {
         category = 'cleanliness';
-        keyPoints = ['Spotless rooms', 'Very clean stay'];
+        keywords = ['Spotless rooms', 'Very clean stay'];
       } else if (lowerReview.includes('location') || lowerReview.includes('close') || lowerReview.includes('market')) {
         category = 'location';
-        keyPoints = ['Convenient location', 'Close to market'];
+        keywords = ['Convenient location', 'Close to market'];
       } else if (lowerReview.includes('host') || lowerReview.includes('responsive') || lowerReview.includes('communication')) {
-        category = 'communication';
-        keyPoints = ['Responsive host', 'Excellent communication'];
+        category = 'host';
+        keywords = ['Responsive host', 'Excellent communication'];
+      } else if (lowerReview.includes('food') || lowerReview.includes('breakfast') || lowerReview.includes('meal')) {
+        category = 'food';
+        keywords = ['Delicious food', 'Great breakfast'];
+      } else if (lowerReview.includes('price') || lowerReview.includes('value') || lowerReview.includes('worth')) {
+        category = 'value';
+        keywords = ['Good value'];
       }
 
       if (lowerReview.includes('bad') || lowerReview.includes('poor') || lowerReview.includes('disappointing') || lowerReview.includes('terrible')) {
@@ -65,13 +85,17 @@ export async function POST(request: NextRequest) {
         responseText = 'Thank you for your review. We appreciate your feedback and will work to improve.';
       }
 
+      const summaryText = review.length > 80 ? review.substring(0, 80) + '...' : review;
+
       const mockReview = mockStore.createReview(
+        homestayId,
         review,
         sentiment,
         category,
         0.85,
-        keyPoints,
-        responseText
+        keywords,
+        responseText,
+        summaryText
       );
 
       const result: AnalysisResult = {
@@ -79,7 +103,9 @@ export async function POST(request: NextRequest) {
         sentiment: mockReview.sentiment,
         sentimentScore: mockReview.sentimentScore,
         category: mockReview.category,
-        keyPoints: mockReview.keyPoints,
+        keywords: mockReview.keywords,
+        keyPoints: mockReview.keywords,
+        summary: mockReview.summary,
         suggestedResponse: mockReview.suggestedResponse,
         createdAt: mockReview.createdAt,
       };
@@ -110,13 +136,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (dbConn === null) {
+      const summaryText = analysis.summary || (review.length > 80 ? review.substring(0, 80) + '...' : review);
       const mockReview = mockStore.createReview(
+        homestayId,
         review,
         analysis.sentiment,
-        analysis.category,
+        analysis.category as Category,
         analysis.sentimentScore || 0.75,
-        analysis.keyPoints || [],
-        analysis.response
+        analysis.keywords || analysis.keyPoints || [],
+        analysis.response || analysis.suggestedResponse || 'Thank you for your review.',
+        summaryText
       );
 
       const result: AnalysisResult = {
@@ -124,7 +153,9 @@ export async function POST(request: NextRequest) {
         sentiment: mockReview.sentiment,
         sentimentScore: mockReview.sentimentScore,
         category: mockReview.category,
-        keyPoints: mockReview.keyPoints,
+        keywords: mockReview.keywords,
+        keyPoints: mockReview.keywords,
+        summary: mockReview.summary,
         suggestedResponse: mockReview.suggestedResponse,
         createdAt: mockReview.createdAt,
       };
@@ -133,13 +164,21 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      const summaryText = analysis.summary || (review.length > 80 ? review.substring(0, 80) + '...' : review);
+      const responseText = analysis.response || analysis.suggestedResponse || 'Thank you for your feedback.';
+      const keywordsArr = analysis.keywords || analysis.keyPoints || [];
+
       const newReview = new Review({
-        text: review,
+        homestayId,
+        platform: 'manual',
+        reviewText: review,
         sentiment: analysis.sentiment,
         category: analysis.category,
         sentimentScore: analysis.sentimentScore || 0.75,
-        keyPoints: analysis.keyPoints || [],
-        suggestedResponse: analysis.response,
+        keywords: keywordsArr,
+        keyPoints: keywordsArr,
+        summary: summaryText,
+        suggestedResponse: responseText,
         analysis,
       });
 
@@ -151,8 +190,10 @@ export async function POST(request: NextRequest) {
         sentiment: analysis.sentiment,
         sentimentScore: analysis.sentimentScore || 0.75,
         category: analysis.category,
-        keyPoints: analysis.keyPoints || [],
-        suggestedResponse: analysis.response,
+        keywords: keywordsArr,
+        keyPoints: keywordsArr,
+        summary: summaryText,
+        suggestedResponse: responseText,
         createdAt: newReview.createdAt,
       };
 
@@ -171,4 +212,5 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(errorResponse, { status: httpStatus });
   }
-}
+});
+

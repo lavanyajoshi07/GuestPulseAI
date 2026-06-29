@@ -1,8 +1,8 @@
 import RegisterForm from '@/components/RegisterForm';
 
 export const metadata = {
-  title: 'Create Account - ReviewLens AI',
-  description: 'Create a new ReviewLens AI account',
+  title: 'Create Account - GuestPulseAI',
+  description: 'Create a new GuestPulseAI account',
 };
 
 export default function RegisterPage() {

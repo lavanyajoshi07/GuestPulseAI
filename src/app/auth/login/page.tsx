@@ -1,8 +1,8 @@
 import LoginForm from '@/components/LoginForm';
 
 export const metadata = {
-  title: 'Sign In - ReviewLens AI',
-  description: 'Sign in to ReviewLens AI',
+  title: 'Sign In - GuestPulseAI',
+  description: 'Sign in to GuestPulseAI',
 };
 
 export default function LoginPage() {

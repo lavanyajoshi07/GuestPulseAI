@@ -17,21 +17,21 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
 
   useEffect(() => {
     const runTimeline = async () => {
-      // 0.8s: GuestPulse AI reveal begins
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // 0.3s: GuestPulse AI reveal begins (reduced from 0.8s)
+      await new Promise((resolve) => setTimeout(resolve, 300));
       await titleControls.start("visible");
       
-      // 3.0s (0.6s pause after title finishes around 2.4s): Subtitle fades in
-      // Let's delay 1.0s from the start of title animation to hit exactly 3.0s
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      await subtitleControls.start("visible");
+      // Show subtitle and CTA buttons sooner (reduced from 1.4s to 0.7s)
+      await new Promise((resolve) => setTimeout(resolve, 700));
       
-      // 3.6s (0.6s pause): CTA buttons appear
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      await ctaControls.start("visible");
+      // Start both subtitle and CTA animations together
+      await Promise.all([
+        subtitleControls.start("visible"),
+        ctaControls.start("visible")
+      ]);
 
-      // 4.2s (0.6s pause / completion): Tell parent that intro is complete
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // Wait 1.0s (reduced from 1.6s) before unlocking page scroll
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       onComplete();
     };
 
@@ -78,7 +78,7 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
       y: 0,
       filter: 'blur(0px)',
       transition: {
-        duration: 1.0,
+        duration: 1.6, // Increased from 1.0 to 1.6 for smoother flow
         ease: [0.16, 1, 0.3, 1],
       },
     },
@@ -94,7 +94,7 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.8,
+        duration: 1.2, // Increased from 0.8 to 1.2 for smoother flow
         ease: [0.16, 1, 0.3, 1],
       },
     },

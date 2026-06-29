@@ -1,11 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IReview extends Document {
-  text: string;
+  homestayId: mongoose.Types.ObjectId;
+  platform: string;
+  reviewText: string;
+  text: string; // virtual field
   sentiment: 'positive' | 'neutral' | 'negative';
   sentimentScore?: number;
-  category: 'cleanliness' | 'communication' | 'location' | 'amenities' | 'host' | 'value' | 'other';
-  keyPoints?: string[];
+  category: 'food' | 'cleanliness' | 'location' | 'host' | 'value' | 'experience';
+  keywords: string[];
+  keyPoints?: string[]; // for backward compatibility
+  summary: string;
   suggestedResponse: string;
   analysis?: Record<string, any>;
   createdAt: Date;
@@ -14,7 +19,18 @@ export interface IReview extends Document {
 
 const ReviewSchema = new Schema<IReview>(
   {
-    text: {
+    homestayId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Homestay',
+      required: [true, 'Homestay ID is required'],
+      index: true,
+    },
+    platform: {
+      type: String,
+      default: 'manual',
+      trim: true,
+    },
+    reviewText: {
       type: String,
       required: [true, 'Review text is required'],
       trim: true,
@@ -34,17 +50,25 @@ const ReviewSchema = new Schema<IReview>(
     },
     category: {
       type: String,
-      enum: ['cleanliness', 'communication', 'location', 'amenities', 'host', 'value', 'other'],
+      enum: ['food', 'cleanliness', 'location', 'host', 'value', 'experience'],
       required: [true, 'Category is required'],
       lowercase: true,
+    },
+    keywords: {
+      type: [String],
+      default: [],
     },
     keyPoints: {
       type: [String],
       default: [],
     },
+    summary: {
+      type: String,
+      required: [true, 'Summary is required'],
+    },
     suggestedResponse: {
       type: String,
-      required: [true, 'Suggested response is required'],
+      default: '',
     },
     analysis: {
       type: Schema.Types.Mixed,
@@ -53,11 +77,23 @@ const ReviewSchema = new Schema<IReview>(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+// Virtual field for "text" mapping to "reviewText" for backward compatibility
+ReviewSchema.virtual('text')
+  .get(function (this: IReview) {
+    return this.reviewText;
+  })
+  .set(function (this: IReview, val: string) {
+    this.reviewText = val;
+  });
 
 // Prevent model recompilation
 const Review =
   mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);
 
 export default Review;
+

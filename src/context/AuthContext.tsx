@@ -7,6 +7,7 @@ interface AuthUser {
   id: string;
   name: string;
   email: string;
+  hasHomestay?: boolean;
 }
 
 interface AuthContextType {
@@ -16,6 +17,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (token: string, user: AuthUser) => void;
   logout: () => void;
+  completeOnboarding: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load auth state from cookies on mount
   useEffect(() => {
-    const storedToken = Cookies.get('token');
+    const storedToken = Cookies.get('auth_token');
     const storedUser = Cookies.get('user');
 
     if (storedToken && storedUser) {
@@ -35,8 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error('[v0] Failed to parse stored user:', error);
-        Cookies.remove('token');
+        console.error('[Auth] Failed to parse stored user:', error);
+        Cookies.remove('auth_token');
         Cookies.remove('user');
       }
     }
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (newToken: string, newUser: AuthUser) => {
     setToken(newToken);
     setUser(newUser);
-    Cookies.set('token', newToken, { 
+    Cookies.set('auth_token', newToken, { 
       expires: 7,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict'
@@ -62,8 +64,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setToken(null);
     setUser(null);
-    Cookies.remove('token');
+    Cookies.remove('auth_token');
     Cookies.remove('user');
+  };
+
+  const completeOnboarding = () => {
+    if (user) {
+      const updatedUser = { ...user, hasHomestay: true };
+      setUser(updatedUser);
+      Cookies.set('user', JSON.stringify(updatedUser), {
+        expires: 7,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+    }
   };
 
   const value: AuthContextType = {
@@ -73,10 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user && !!token,
     login,
     logout,
+    completeOnboarding,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
 
 export function useAuth() {
   const context = useContext(AuthContext);
