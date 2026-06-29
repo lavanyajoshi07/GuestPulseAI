@@ -5,6 +5,7 @@ import './globals.css'
 import Navbar from '@/components/Navbar'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
+import { NavbarProvider } from '@/context/NavbarContext'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({
@@ -75,8 +76,10 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-background text-foreground transition-colors duration-300">
         <ThemeProvider>
           <AuthProvider>
-            <Navbar />
-            {children}
+            <NavbarProvider>
+              <Navbar />
+              {children}
+            </NavbarProvider>
           </AuthProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
