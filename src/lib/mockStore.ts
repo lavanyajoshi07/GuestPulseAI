@@ -402,8 +402,6 @@ export const mockStore = {
       ],
       propertyComparisons: [
         { propertyName: homestayName, satisfactionRate: 88, topCategory: 'host', status: 'Best Performer' as const },
-        { propertyName: 'Sunset Beachfront Villa B', satisfactionRate: 79, topCategory: 'location', status: 'Average' as const },
-        { propertyName: 'Mountain View Cottage C', satisfactionRate: 71, topCategory: 'cleanliness', status: 'Needs Attention' as const },
       ],
     };
   },

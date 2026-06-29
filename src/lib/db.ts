@@ -494,8 +494,6 @@ export async function getBenchmarkingData(homestayId: string, forceRefresh: bool
 
     const defaultComparisons = [
       { propertyName: homestayName, satisfactionRate: ownerSatisfaction, topCategory: 'host', status: ownerSatisfaction >= 85 ? 'Best Performer' as const : 'Average' as const },
-      { propertyName: 'Sunset Beachfront Villa B', satisfactionRate: 79, topCategory: 'location', status: 'Average' as const },
-      { propertyName: 'Mountain View Cottage C', satisfactionRate: 72, topCategory: 'cleanliness', status: 'Needs Attention' as const },
     ];
 
     cachedBenchmark = await Benchmark.create({
@@ -509,6 +507,18 @@ export async function getBenchmarkingData(homestayId: string, forceRefresh: bool
     });
   }
 
+  const filteredComparisons = (cachedBenchmark.propertyComparisons || []).filter(
+    (p: any) => p.propertyName === homestayName
+  );
+  if (filteredComparisons.length === 0) {
+    filteredComparisons.push({
+      propertyName: homestayName,
+      satisfactionRate: cachedBenchmark.ownerSatisfaction,
+      topCategory: 'host',
+      status: cachedBenchmark.ownerSatisfaction >= 85 ? 'Best Performer' : 'Average',
+    });
+  }
+
   return {
     homestayName,
     industryAverageSatisfaction: cachedBenchmark.industryAverageSatisfaction,
@@ -516,7 +526,7 @@ export async function getBenchmarkingData(homestayId: string, forceRefresh: bool
     regionalCleanlinessScore: cachedBenchmark.regionalCleanlinessScore,
     regionalHostScore: cachedBenchmark.regionalHostScore,
     competitiveInsights: cachedBenchmark.competitiveInsights,
-    propertyComparisons: cachedBenchmark.propertyComparisons,
+    propertyComparisons: filteredComparisons,
   };
 }
 

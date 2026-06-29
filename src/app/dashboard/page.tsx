@@ -310,7 +310,7 @@ function DashboardContent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-emerald-500 font-bold text-base">
                 <Activity className="w-5 h-5" />
-                Action Impact Cards & Operational Improvements (Phase 8)
+                Action Impact Cards & Operational Improvements
               </div>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                 Automated Impact Tracking
@@ -336,7 +336,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Phase 7: Multi-Homestay & Industry Benchmarking Cards */}
+        {/* Multi-Homestay & Industry Benchmarking Cards */}
         {benchmarkData && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-2">
@@ -378,7 +378,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Proactive Action Cards Section (Phase 6) */}
+        {/* Proactive Action Cards Section */}
         {actionCards.length > 0 && (
           <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -387,7 +387,7 @@ function DashboardContent() {
                 Proactive AI Action Cards & Real-Time Alerts
               </div>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                Phase 6 & 7 AI Engine
+                Proactive AI Engine
               </span>
             </div>
 

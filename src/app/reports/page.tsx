@@ -439,14 +439,14 @@ function ReportsContent() {
         </div>
       )}
 
-      {/* Phase 6: Predictive Satisfaction Forecast Chart */}
+      {/* Predictive Satisfaction Forecast Chart */}
       {predictionData?.forecastTrend && (
         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-500" />
-                Predictive Satisfaction Forecast (Phase 6 AI Engine)
+                Predictive Satisfaction Forecast
               </h2>
               <p className="text-xs text-muted-foreground">Historical performance vs upcoming predictive forecast line</p>
             </div>
@@ -471,14 +471,14 @@ function ReportsContent() {
         </div>
       )}
 
-      {/* Phase 7: Multi-Homestay & Competitive Benchmarking Section */}
+      {/* Multi-Homestay & Competitive Benchmarking Section */}
       {benchmarkingData && (
         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                 <Globe className="w-4 h-4 text-blue-500" />
-                Multi-Homestay & Regional Benchmarking (Phase 7 Engine)
+                Multi-Homestay & Regional Benchmarking
               </h2>
               <p className="text-xs text-muted-foreground">Side-by-side comparative analysis across listings and regional benchmarks</p>
             </div>
@@ -537,14 +537,14 @@ function ReportsContent() {
         </div>
       )}
 
-      {/* Phase 8: Operational Action Impact Section */}
+      {/* Operational Action Impact Section */}
       {actionsData.length > 0 && (
         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                 <Activity className="w-4 h-4 text-emerald-500" />
-                Logged Operational Action Impact (Phase 8 Tracking Engine)
+                Logged Operational Action Impact
               </h2>
               <p className="text-xs text-muted-foreground">Measured reduction in guest complaints before vs after operational changes</p>
             </div>
@@ -572,14 +572,14 @@ function ReportsContent() {
         </div>
       )}
 
-      {/* Phase 9: Guest Experience & NPS Forecast Section */}
+      {/* Guest Experience & NPS Forecast Section */}
       {forecastData && (
         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                 <Heart className="w-4 h-4 text-purple-500" />
-                Guest Experience & Loyalty Forecast (Phase 9 Engine)
+                Guest Experience & Loyalty Forecast
               </h2>
               <p className="text-xs text-muted-foreground">Historical vs Predicted Net Promoter Score (NPS) and Repeat Booking Probability</p>
             </div>

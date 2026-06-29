@@ -85,14 +85,14 @@ function HistoryContent() {
           </p>
         </div>
 
-        {/* Phase 6, 7 & 9: Forecast Accuracy, Benchmarking & Loyalty Banners */}
+        {/* Forecast Accuracy, Benchmarking & Loyalty Banners */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {predictions && (
             <div className="bg-gradient-to-r from-purple-900/20 via-card to-blue-900/20 border border-purple-500/30 rounded-2xl p-6 shadow-sm flex items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm">
                   <Sparkles className="w-4 h-4" />
-                  Phase 6: AI Accuracy
+                  AI Forecast Accuracy
                 </div>
                 <p className="text-xs text-muted-foreground truncate">Period: {predictions.forecastPeriod}</p>
               </div>
@@ -107,7 +107,7 @@ function HistoryContent() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm">
                   <Globe className="w-4 h-4" />
-                  Phase 7: Benchmark
+                  Regional Benchmark
                 </div>
                 <p className="text-xs text-muted-foreground truncate">vs Industry Avg ({benchmarking.industryAverageSatisfaction}%)</p>
               </div>
@@ -122,7 +122,7 @@ function HistoryContent() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                   <Heart className="w-4 h-4" />
-                  Phase 9: Loyalty NPS
+                  Loyalty & NPS Score
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{forecastData.repeatBookingProbability}% Repeat Visits</p>
               </div>
@@ -133,12 +133,12 @@ function HistoryContent() {
           )}
         </div>
 
-        {/* Phase 8: Operational Action History Log */}
+        {/* Operational Action History Log */}
         {loggedActions.length > 0 && (
           <div className="mb-8 bg-card border border-border p-6 rounded-2xl shadow-sm space-y-4">
             <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-500" />
-              Operational Actions History Log & Impact Metrics (Phase 8)
+              Operational Actions History Log & Impact Metrics
             </h3>
             <div className="space-y-3">
               {loggedActions.map((act: any, idx: number) => (
