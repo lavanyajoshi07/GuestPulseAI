@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, Lobster } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import { AuthProvider } from '@/context/AuthContext'
@@ -10,6 +10,11 @@ import { NavbarProvider } from '@/context/NavbarContext'
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
+  subsets: ['latin'],
+})
+const lobster = Lobster({
+  weight: '400',
+  variable: '--font-lobster',
   subsets: ['latin'],
 })
 
@@ -50,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${lobster.variable}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

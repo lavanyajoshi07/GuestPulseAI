@@ -10,7 +10,6 @@ interface TypographyRevealProps {
 export default function TypographyReveal({ onComplete }: TypographyRevealProps) {
   const titleControls = useAnimation();
   const subtitleControls = useAnimation();
-  const ctaControls = useAnimation();
 
   const titleText = "GuestPulse AI";
   const letters = titleText.split("");
@@ -24,11 +23,8 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
       // Show subtitle and CTA buttons sooner (reduced from 1.4s to 0.7s)
       await new Promise((resolve) => setTimeout(resolve, 700));
       
-      // Start both subtitle and CTA animations together
-      await Promise.all([
-        subtitleControls.start("visible"),
-        ctaControls.start("visible")
-      ]);
+      // Start subtitle animation
+      await subtitleControls.start("visible");
 
       // Wait 1.0s (reduced from 1.6s) before unlocking page scroll
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -36,7 +32,7 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
     };
 
     runTimeline();
-  }, [titleControls, subtitleControls, ctaControls, onComplete]);
+  }, [titleControls, subtitleControls, onComplete]);
 
   // Letters container variant
   const containerVariants = {
@@ -84,22 +80,6 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
     },
   };
 
-  // CTA Buttons variant
-  const ctaVariants = {
-    hidden: {
-      opacity: 0,
-      y: 10,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 1.2, // Increased from 0.8 to 1.2 for smoother flow
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  };
-
   return (
     <div className="flex flex-col items-center justify-center text-center select-none w-full max-w-4xl px-6">
       {/* Title Layer with Clip Path Mask */}
@@ -133,33 +113,6 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
         <br />
         Improve Every Stay.
       </motion.p>
-
-      {/* CTA Layer */}
-      <motion.div
-        variants={ctaVariants}
-        initial="hidden"
-        animate={ctaControls}
-        className="mt-8 flex flex-row items-center gap-4 pointer-events-auto will-change-[transform,opacity]"
-      >
-        <button
-          onClick={() => {
-            const el = document.getElementById('phase-2-target');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className="px-6 py-3 rounded-full bg-white text-black font-medium text-sm md:text-base shadow-lg hover:bg-white/90 active:scale-95 transition-all duration-200 cursor-pointer"
-        >
-          Get Started
-        </button>
-        <button
-          onClick={() => {
-            const el = document.getElementById('phase-2-target');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className="px-6 py-3 rounded-full border border-white/25 bg-white/5 backdrop-blur-md text-white font-medium text-sm md:text-base hover:bg-white/10 active:scale-95 transition-all duration-200 cursor-pointer"
-        >
-          Explore Demo
-        </button>
-      </motion.div>
     </div>
   );
 }
