@@ -15,23 +15,32 @@ export default function TypographyReveal({ onComplete }: TypographyRevealProps) 
   const letters = titleText.split("");
 
   useEffect(() => {
+    let isMounted = true;
+
     const runTimeline = async () => {
       // 0.3s: GuestPulse AI reveal begins (reduced from 0.8s)
       await new Promise((resolve) => setTimeout(resolve, 300));
+      if (!isMounted) return;
       await titleControls.start("visible");
       
       // Show subtitle and CTA buttons sooner (reduced from 1.4s to 0.7s)
       await new Promise((resolve) => setTimeout(resolve, 700));
+      if (!isMounted) return;
       
       // Start subtitle animation
       await subtitleControls.start("visible");
 
       // Wait 1.0s (reduced from 1.6s) before unlocking page scroll
       await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!isMounted) return;
       onComplete();
     };
 
     runTimeline();
+
+    return () => {
+      isMounted = false;
+    };
   }, [titleControls, subtitleControls, onComplete]);
 
   // Letters container variant

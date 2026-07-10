@@ -3,7 +3,6 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken, setAuthCookie } from '@/lib/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
-import { mockStore } from '@/lib/mockStore';
 import {
   ValidationError,
   DatabaseError,
@@ -58,35 +57,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to database
-    let dbConn;
     try {
-      dbConn = await connectDB();
+      await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
-    }
-
-    if (dbConn === null) {
-      // Mock mode fallback
-      const existingUser = mockStore.findUserByEmail(email);
-      if (existingUser) {
-        throw new ValidationError('Email already registered', 'email');
-      }
-
-      const user = mockStore.createUser(name, email, password);
-      const token = await generateToken(user._id, user.email);
-      await setAuthCookie(token);
-
-      return NextResponse.json({
-        success: true,
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          hasHomestay: false,
-        },
-        message: 'Registration successful',
-      });
     }
 
     // Create user

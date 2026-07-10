@@ -3,7 +3,6 @@ import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
 import mongoose from 'mongoose';
 import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
-import { mockStore } from '@/lib/mockStore';
 import {
   validatePaginationParams,
   validateSentiment,
@@ -81,30 +80,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     // Connect to database
-    let dbConn;
     try {
-      dbConn = await connectDB();
+      await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
-    }
-
-    if (dbConn === null) {
-      const filter: Record<string, any> = {};
-      if (sentiment) filter.sentiment = sentiment.toLowerCase();
-      if (category) filter.category = category.toLowerCase();
-
-      const { reviews, total } = mockStore.getReviews(homestayId, filter, parsedSkip, parsedLimit);
-
-      return NextResponse.json({
-        success: true,
-        data: reviews,
-        pagination: {
-          skip: parsedSkip,
-          limit: parsedLimit,
-          total,
-          hasMore: parsedSkip + parsedLimit < total,
-        },
-      });
     }
 
     // Build filter scoped strictly by homestayId

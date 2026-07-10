@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import type { Review } from '@/types';
 
 export async function exportReviewsAsCSV(reviews: Review[]): Promise<string> {
@@ -11,7 +11,6 @@ export async function exportReviewsAsCSV(reviews: Review[]): Promise<string> {
     'Sentiment Score': review.sentimentScore || 0.75,
     'Category': review.category,
     'Key Points': (review.keyPoints || []).join('; '),
-    'Suggested Response': review.suggestedResponse,
     'Created At': new Date(review.createdAt).toLocaleString(),
   }));
 
@@ -30,7 +29,6 @@ export async function exportReviewsAsJSON(reviews: Review[]): Promise<string> {
         sentimentScore: review.sentimentScore || 0.75,
         category: review.category,
         keyPoints: review.keyPoints || [],
-        suggestedResponse: review.suggestedResponse,
         createdAt: review.createdAt,
       })),
     },
@@ -68,7 +66,7 @@ export async function exportDashboardAsPDF(stats: any): Promise<Uint8Array> {
     ['Most Common Category', stats.mostCommonCategory || 'N/A'],
   ];
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: yPosition,
     head: [['Metric', 'Value']],
     body: statsData,
@@ -93,7 +91,7 @@ export async function exportDashboardAsPDF(stats: any): Promise<Uint8Array> {
       item.count,
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['Category', 'Count']],
       body: categoryData,
@@ -145,7 +143,7 @@ export async function exportReportAsPDF(reportData: any, homestayName: string): 
     ['Primary Areas for Improvement', (reportData.topComplaints || []).join(', ') || 'None reported'],
   ];
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [['Metric', 'Detail']],
     body: metricsBody,
@@ -194,7 +192,7 @@ export async function exportReportAsPDF(reportData: any, homestayName: string): 
 
     const catData = reportData.categoryBreakdown.map((c: any) => [c.category, c.count]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Category', 'Feedback Count']],
       body: catData,

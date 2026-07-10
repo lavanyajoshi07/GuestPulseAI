@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { getReportAnalytics } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
-import { mockStore } from '@/lib/mockStore';
 import {
   DatabaseError,
   formatErrorResponse,
@@ -32,19 +31,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
   const forceRefresh = searchParams.get('refresh') === 'true';
 
   try {
-    let dbConn;
     try {
-      dbConn = await connectDB();
+      await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
-    }
-
-    if (dbConn === null) {
-      const reportData = mockStore.getReportData(homestayId, month, year);
-      return NextResponse.json({
-        success: true,
-        data: reportData,
-      });
     }
 
     try {

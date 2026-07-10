@@ -13,10 +13,8 @@ let cached: MongooseConnection = {
 };
 
 async function connectDB() {
-  const isMock = !MONGODB_URI || MONGODB_URI.includes('YOUR_USERNAME') || MONGODB_URI.includes('cluster-name');
-  if (isMock) {
-    console.log('[MongoDB] Running in Mock In-Memory Database Mode');
-    return null;
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI environment variable is not defined');
   }
 
   if (cached.conn) {
@@ -27,6 +25,7 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds to fallback quickly
     };
 
     cached.promise = mongoose
@@ -34,17 +33,13 @@ async function connectDB() {
       .then((mongoose) => {
         console.log('[MongoDB] Connected successfully');
         return mongoose;
-      })
-      .catch((error) => {
-        console.error('[MongoDB] Connection failed:', error);
-        throw error;
       });
   }
 
   try {
     cached.conn = await cached.promise;
   } catch (e) {
-    cached.promise = null;
+    cached.promise = null; // Reset so subsequent requests can try reconnecting
     throw e;
   }
 

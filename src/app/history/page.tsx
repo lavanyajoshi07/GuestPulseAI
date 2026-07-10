@@ -75,62 +75,14 @@ function HistoryContent() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background transition-colors duration-300">
+    <main className="min-h-screen bg-[#f4f2ee] dark:bg-[#0B1220] transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Review History & Predictive Log</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Review History</h1>
           <p className="text-muted-foreground">
-            Browse all analyzed reviews, historical data, and AI forecast accuracy metrics.
+            Browse all analyzed reviews and historical data.
           </p>
-        </div>
-
-        {/* Forecast Accuracy, Benchmarking & Loyalty Banners */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {predictions && (
-            <div className="bg-gradient-to-r from-purple-900/20 via-card to-blue-900/20 border border-purple-500/30 rounded-2xl p-6 shadow-sm flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm">
-                  <Sparkles className="w-4 h-4" />
-                  AI Forecast Accuracy
-                </div>
-                <p className="text-xs text-muted-foreground truncate">Period: {predictions.forecastPeriod}</p>
-              </div>
-              <div className="px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/30 text-center flex-shrink-0">
-                <span className="text-lg font-extrabold text-purple-600 dark:text-purple-400">{predictions.accuracyScore || 94}%</span>
-              </div>
-            </div>
-          )}
-
-          {benchmarking && (
-            <div className="bg-gradient-to-r from-blue-900/20 via-card to-emerald-900/20 border border-blue-500/30 rounded-2xl p-6 shadow-sm flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm">
-                  <Globe className="w-4 h-4" />
-                  Regional Benchmark
-                </div>
-                <p className="text-xs text-muted-foreground truncate">vs Industry Avg ({benchmarking.industryAverageSatisfaction}%)</p>
-              </div>
-              <div className="px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-center flex-shrink-0">
-                <span className="text-lg font-extrabold text-blue-600 dark:text-blue-400">+{benchmarking.ownerSatisfaction - benchmarking.industryAverageSatisfaction}%</span>
-              </div>
-            </div>
-          )}
-
-          {forecastData && (
-            <div className="bg-gradient-to-r from-emerald-900/20 via-card to-purple-900/20 border border-emerald-500/30 rounded-2xl p-6 shadow-sm flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                  <Heart className="w-4 h-4" />
-                  Loyalty & NPS Score
-                </div>
-                <p className="text-xs text-muted-foreground truncate">{forecastData.repeatBookingProbability}% Repeat Visits</p>
-              </div>
-              <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center flex-shrink-0">
-                <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">{forecastData.predictedNPS} NPS</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Operational Action History Log */}
@@ -162,24 +114,24 @@ function HistoryContent() {
         )}
 
         {/* Search and Filter */}
-        <div className="bg-card rounded-lg shadow-sm border border-border p-6 mb-8 transition-colors duration-300">
+        <div className="bg-card dark:bg-[#16212E] rounded-lg shadow-sm border border-border dark:border-[#1E2D3D] p-6 mb-8 transition-colors duration-300">
           <div className="grid md:grid-cols-2 gap-4">
             <input
               type="text"
               placeholder="Search reviews..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="px-4 py-2 bg-background dark:bg-[#0B1220] border border-border dark:border-[#1E2D3D] text-foreground dark:text-[#E9F1F3] rounded-lg focus:ring-2 focus:ring-[#00C2A9] focus:border-transparent transition-colors"
             />
             <select
               value={filterSentiment}
               onChange={(e) => setFilterSentiment(e.target.value)}
-              className="px-4 py-2 bg-background border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="px-4 py-2 bg-background dark:bg-[#0B1220] border border-border dark:border-[#1E2D3D] text-foreground dark:text-[#E9F1F3] rounded-lg focus:ring-2 focus:ring-[#00C2A9] focus:border-transparent transition-colors cursor-pointer"
             >
-              <option value="all">All Sentiments</option>
-              <option value="positive">Positive Only</option>
-              <option value="neutral">Neutral Only</option>
-              <option value="negative">Negative Only</option>
+              <option value="all" className="dark:bg-[#16212E]">All Sentiments</option>
+              <option value="positive" className="dark:bg-[#16212E]">Positive Only</option>
+              <option value="neutral" className="dark:bg-[#16212E]">Neutral Only</option>
+              <option value="negative" className="dark:bg-[#16212E]">Negative Only</option>
             </select>
           </div>
         </div>
@@ -230,30 +182,19 @@ function HistoryContent() {
         {/* Selected Review Modal */}
         {selectedReview && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-card border border-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
+            <div className="bg-[#f4f2ee] dark:bg-[#16212E] border border-border dark:border-[#1E2D3D] rounded-2xl max-w-2xl w-full p-8 relative shadow-xl">
               <button
                 onClick={() => setSelectedReview(null)}
-                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors"
+                className="absolute top-6 right-6 text-muted-foreground dark:text-slate-400 hover:text-foreground dark:hover:text-slate-200 p-1.5 rounded-lg transition-colors border border-transparent hover:border-border dark:hover:border-[#1E2D3D] hover:bg-muted/50 dark:hover:bg-slate-800"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
-              <div className="mb-4">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Review Text</span>
-                <p className="text-foreground mt-1 text-sm bg-muted/50 p-3 rounded-lg border border-border">"{selectedReview.text}"</p>
+              <div className="space-y-4">
+                <span className="text-xs font-bold text-muted-foreground dark:text-slate-400 uppercase tracking-widest">Review Text</span>
+                <p className="text-foreground dark:text-slate-800 text-base leading-relaxed bg-[#f4f2ee] dark:bg-[#E2E8F0] p-5 rounded-xl border border-border dark:border-slate-300 font-medium">
+                  "{selectedReview.text}"
+                </p>
               </div>
-              <ResultCard
-                result={{
-                  sentimentOverview: {
-                    positivePercent: selectedReview.sentiment === 'positive' ? 100 : 0,
-                    neutralPercent: selectedReview.sentiment === 'neutral' ? 100 : 0,
-                    negativePercent: selectedReview.sentiment === 'negative' ? 100 : 0,
-                    satisfactionRate: selectedReview.sentiment === 'positive' ? 100 : selectedReview.sentiment === 'neutral' ? 50 : 0,
-                  },
-                  topComplaints: selectedReview.sentiment === 'negative' ? [selectedReview.category] : [],
-                  topAppreciated: selectedReview.sentiment === 'positive' ? [selectedReview.category] : [],
-                  aiSuggestions: ['Review guest feedback and maintain high hospitality standards.'],
-                }}
-              />
             </div>
           </div>
         )}

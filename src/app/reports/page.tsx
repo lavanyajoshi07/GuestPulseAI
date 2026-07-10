@@ -14,10 +14,15 @@ import {
   Calendar,
   Sparkles,
   BarChart2,
+  BarChart3,
   Globe,
   Activity,
-  Heart
+  Heart,
+  Compass,
+  Wifi,
+  VolumeX
 } from 'lucide-react';
+import EmptyState from '@/components/EmptyState';
 import { 
   BarChart, 
   Bar, 
@@ -46,6 +51,100 @@ interface ReportData {
   mostAppreciated: string[];
   categoryBreakdown: Array<{ category: string; count: number }>;
   aiSummary: string;
+}
+
+function parseAIInsight(rawText: any) {
+  const result = {
+    topAssets: [] as { title: string; description: string }[],
+    operationalRisks: [] as { title: string; description: string }[],
+    strategicRecommendation: { title: 'Strategic Recommendation', description: '' }
+  };
+
+  if (!rawText) return null;
+
+  // Support pre-parsed objects from historical payloads
+  if (typeof rawText === 'object') {
+    return {
+      topAssets: rawText.topAssets || [],
+      operationalRisks: rawText.operationalRisks || [],
+      strategicRecommendation: rawText.strategicRecommendation || { title: 'Strategic Recommendation', description: '' }
+    };
+  }
+
+  if (typeof rawText !== 'string') return null;
+
+  // Check if it's already a JSON string
+  try {
+    const parsed = JSON.parse(rawText);
+    if (parsed.topAssets || parsed.operationalRisks || parsed.strategicRecommendation) {
+      return {
+        topAssets: parsed.topAssets || [],
+        operationalRisks: parsed.operationalRisks || [],
+        strategicRecommendation: parsed.strategicRecommendation || { title: 'Strategic Recommendation', description: '' }
+      };
+    }
+  } catch (e) {
+    // Continue parsing as raw text
+  }
+
+  // Parse markdown format on-the-fly
+  const lines = rawText.split('\n');
+  let currentSection: 'none' | 'positive' | 'complaints' | 'recommendation' = 'none';
+
+  for (let line of lines) {
+    const cleanLine = line.trim();
+    if (!cleanLine) continue;
+
+    const lowerLine = cleanLine.toLowerCase();
+
+    // Check if it's a section header line (not a bullet/list item)
+    const isHeader = (
+      (lowerLine.startsWith('**') && lowerLine.endsWith('**')) ||
+      lowerLine.startsWith('###') ||
+      lowerLine.startsWith('##') ||
+      lowerLine.endsWith(':')
+    );
+
+    if (isHeader) {
+      if (lowerLine.includes('actionable') || lowerLine.includes('strategic') || lowerLine.includes('recommendation') || lowerLine.includes('plan')) {
+        currentSection = 'recommendation';
+        continue;
+      } else if (lowerLine.includes('positive') || lowerLine.includes('brand asset') || lowerLine.includes('appreciate')) {
+        currentSection = 'positive';
+        continue;
+      } else if (lowerLine.includes('complaint') || lowerLine.includes('operational risk') || lowerLine.includes('improvement') || lowerLine.includes('negative')) {
+        currentSection = 'complaints';
+        continue;
+      }
+    }
+
+    // Check if it's a list item: e.g., "* **Title:** Description" or "- **Title:** Description" or "1. **Title:** Description"
+    const match = cleanLine.match(/^[*-\d.]+\s+\*\*(.*?)\*\*[:\s]+(.*)/);
+    if (match) {
+      const title = match[1].replace(/:$/, '').trim();
+      const description = match[2].trim();
+      if (currentSection === 'positive') {
+        result.topAssets.push({ title, description });
+      } else if (currentSection === 'complaints') {
+        result.operationalRisks.push({ title, description });
+      } else if (currentSection === 'recommendation') {
+        result.strategicRecommendation.description = (result.strategicRecommendation.description + ' ' + title + ': ' + description).trim();
+      }
+    } else {
+      // Just normal text
+      const cleanText = cleanLine.replace(/^[*-\d.\s]+/, '').trim();
+      if (currentSection === 'recommendation') {
+        result.strategicRecommendation.description = (result.strategicRecommendation.description + ' ' + cleanText).trim();
+      }
+    }
+  }
+
+  // Fallback if recommendation description is empty
+  if (!result.strategicRecommendation.description) {
+    result.strategicRecommendation.description = rawText;
+  }
+
+  return result;
 }
 
 function ReportsContent() {
@@ -180,6 +279,23 @@ function ReportsContent() {
       </div>
     );
   }
+
+  if (!reportData || reportData.totalReviews === 0) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background transition-colors duration-300">
+        <div className="max-w-6xl mx-auto px-4 py-12">
+          <EmptyState
+            icon={BarChart3}
+            title="No data yet"
+            description="Start analyzing reviews to see your performance reports."
+            action={{ label: 'Go to Analyzer', href: '/analyzer' }}
+          />
+        </div>
+      </main>
+    );
+  }
+
+  const parsedInsights = reportData ? parseAIInsight(reportData.aiSummary) : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
@@ -327,23 +443,94 @@ function ReportsContent() {
       </div>
 
       {/* Gemini AI Executive Summary Card */}
-      <div className="bg-gradient-to-br from-blue-900/10 via-card to-indigo-900/10 border border-blue-500/20 rounded-3xl p-6 md:p-8 shadow-md relative overflow-hidden">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-md">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">Gemini AI Executive Business Insights</h2>
-              <p className="text-xs text-muted-foreground">Automated multi-review synthesis and strategic recommendations</p>
+      {parsedInsights && (
+        <div className="bg-gradient-to-br from-emerald-500/10 via-card to-emerald-500/5 border border-emerald-500/20 rounded-3xl p-6 md:p-8 shadow-md relative overflow-hidden space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-md">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Gemini AI Executive Business Insights</h2>
+                <p className="text-xs text-muted-foreground">Automated multi-review synthesis and strategic recommendations</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="prose dark:prose-invert max-w-none text-sm text-foreground/90 whitespace-pre-line leading-relaxed bg-card/60 backdrop-blur-md p-6 rounded-2xl border border-border/60">
-          {reportData?.aiSummary || 'No AI summary generated yet.'}
+          {/* 1. TOP BRAND ASSET (Positive) */}
+          {parsedInsights.topAssets.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                ✨ TOP BRAND ASSET (Positive)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {parsedInsights.topAssets.map((asset, index) => (
+                  <div key={index} className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 space-y-1">
+                    <div className="flex items-center gap-2 font-bold text-xs text-foreground">
+                      <span>{index === 0 ? '✨' : '🍳'}</span>
+                      <span>{asset.title}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{asset.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 2. OPERATIONAL RISKS (recurring complaints) */}
+          {parsedInsights.operationalRisks.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                ⚠️ OPERATIONAL RISKS (recurring complaints)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {parsedInsights.operationalRisks.map((risk, index) => {
+                  const lowerTitle = risk.title.toLowerCase();
+                  const lowerDesc = risk.description.toLowerCase();
+                  let IconComponent = AlertCircle;
+                  if (lowerTitle.includes('clean') || lowerDesc.includes('clean') || lowerTitle.includes('maintenance')) {
+                    IconComponent = AlertCircle;
+                  } else if (lowerTitle.includes('wi-fi') || lowerTitle.includes('wifi') || lowerTitle.includes('infra') || lowerDesc.includes('water') || lowerDesc.includes('geyser') || lowerDesc.includes('power')) {
+                    IconComponent = Wifi;
+                  } else if (lowerTitle.includes('noise') || lowerDesc.includes('noise') || lowerTitle.includes('sound')) {
+                    IconComponent = VolumeX;
+                  }
+
+                  return (
+                    <div key={index} className="p-4 rounded-xl bg-card border border-border flex gap-3">
+                      <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 self-start">
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <h5 className="font-bold text-xs text-foreground">{risk.title}</h5>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{risk.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 3. STRATEGIC RECOMMENDATION (Execution Plan) */}
+          {parsedInsights.strategicRecommendation.description && (
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                🧭 STRATEGIC RECOMMENDATION (Execution Plan)
+              </h4>
+              <div className="p-5 rounded-xl bg-purple-500/5 border border-purple-500/20 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-xs text-purple-600 dark:text-purple-400">
+                  <Compass className="w-4 h-4" />
+                  <span>{parsedInsights.strategicRecommendation.title || 'Actionable Execution Plan'}</span>
+                </div>
+                <p className="text-xs text-foreground leading-relaxed whitespace-pre-line">
+                  {parsedInsights.strategicRecommendation.description}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Highlights & Category Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -471,71 +658,7 @@ function ReportsContent() {
         </div>
       )}
 
-      {/* Multi-Homestay & Competitive Benchmarking Section */}
-      {benchmarkingData && (
-        <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Globe className="w-4 h-4 text-blue-500" />
-                Multi-Homestay & Regional Benchmarking
-              </h2>
-              <p className="text-xs text-muted-foreground">Side-by-side comparative analysis across listings and regional benchmarks</p>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
-              Regional AI Comparison
-            </span>
-          </div>
 
-          {/* AI Competitive Insights list */}
-          {benchmarkingData.competitiveInsights && benchmarkingData.competitiveInsights.length > 0 && (
-            <div className="p-4 bg-muted/40 rounded-xl border border-border space-y-2">
-              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">AI Competitive Intelligence Summary</h4>
-              <ul className="space-y-1.5 text-xs text-muted-foreground">
-                {benchmarkingData.competitiveInsights.map((ins: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="text-blue-500">•</span>
-                    <span>{ins}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Property Comparisons Table */}
-          {benchmarkingData.propertyComparisons && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] tracking-wider">
-                  <tr>
-                    <th className="p-3 rounded-l-xl">Property Name</th>
-                    <th className="p-3">Satisfaction %</th>
-                    <th className="p-3">Top Advantage</th>
-                    <th className="p-3 rounded-r-xl">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50 text-foreground">
-                  {benchmarkingData.propertyComparisons.map((prop: any, i: number) => (
-                    <tr key={i}>
-                      <td className="p-3 font-semibold">{prop.propertyName}</td>
-                      <td className="p-3 font-bold text-emerald-500">{prop.satisfactionRate}%</td>
-                      <td className="p-3 capitalize">{prop.topCategory}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                          prop.status === 'Best Performer' ? 'bg-emerald-500/20 text-emerald-500' :
-                          prop.status === 'Needs Attention' ? 'bg-rose-500/20 text-rose-500' : 'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          {prop.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Operational Action Impact Section */}
       {actionsData.length > 0 && (

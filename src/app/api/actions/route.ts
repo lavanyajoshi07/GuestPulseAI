@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { getLoggedActions, createLoggedAction } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
-import { mockStore } from '@/lib/mockStore';
 import {
   ValidationError,
   DatabaseError,
@@ -28,19 +27,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
   const homestayId = request.homestayId;
 
   try {
-    let dbConn;
     try {
-      dbConn = await connectDB();
+      await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
-    }
-
-    if (dbConn === null) {
-      const actions = mockStore.getLoggedActions(homestayId);
-      return NextResponse.json({
-        success: true,
-        data: actions,
-      });
     }
 
     try {
@@ -86,23 +76,10 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       throw new ValidationError('Action title and category are required.');
     }
 
-    let dbConn;
     try {
-      dbConn = await connectDB();
+      await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
-    }
-
-    if (dbConn === null) {
-      const created = mockStore.createLoggedAction(homestayId, {
-        title: body.title,
-        category: body.category,
-        notes: body.notes,
-      });
-      return NextResponse.json({
-        success: true,
-        data: created,
-      });
     }
 
     try {

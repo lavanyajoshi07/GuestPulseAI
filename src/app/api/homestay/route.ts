@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
 import connectDB from '@/lib/mongodb';
 import Homestay from '@/models/Homestay';
-import { mockStore } from '@/lib/mockStore';
 
 export const runtime = 'nodejs';
 
@@ -11,13 +10,6 @@ export const GET = withAuth(async (req: AuthenticatedRequest) => {
   const userId = req.userId;
   if (!userId) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const isMock = !process.env.MONGODB_URI || process.env.MONGODB_URI.includes('YOUR_USERNAME') || process.env.MONGODB_URI.includes('cluster-name');
-  
-  if (isMock) {
-    const homestay = mockStore.getHomestayByOwnerId(userId);
-    return NextResponse.json({ success: true, homestay: homestay || null });
   }
 
   try {
@@ -45,18 +37,6 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
         { success: false, error: 'Homestay Name, Location, and Property Type are required' },
         { status: 400 }
       );
-    }
-
-    const isMock = !process.env.MONGODB_URI || process.env.MONGODB_URI.includes('YOUR_USERNAME') || process.env.MONGODB_URI.includes('cluster-name');
-
-    if (isMock) {
-      const existing = mockStore.getHomestayByOwnerId(userId);
-      if (existing) {
-        return NextResponse.json({ success: false, error: 'Homestay already configured for this user' }, { status: 400 });
-      }
-
-      const homestay = mockStore.createHomestay(userId, homestayName, location, propertyType, description);
-      return NextResponse.json({ success: true, homestay });
     }
 
     await connectDB();

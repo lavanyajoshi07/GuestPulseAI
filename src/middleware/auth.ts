@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Homestay from '@/models/Homestay';
-import { mockStore } from '@/lib/mockStore';
 
 export interface AuthenticatedRequest extends NextRequest {
   userId?: string;
@@ -55,25 +54,14 @@ export async function withAuth(
       authenticatedReq.userEmail = payload.email;
 
       // Retrieve owner's homestay (for multi-tenant scoping)
-      const isMock = !process.env.MONGODB_URI || process.env.MONGODB_URI.includes('YOUR_USERNAME') || process.env.MONGODB_URI.includes('cluster-name');
-      if (isMock) {
-        // Access mock store dynamically to see if user has a homestay
-        const mockStoreAny = mockStore as any;
-        const homestays = mockStoreAny.getHomestays ? mockStoreAny.getHomestays() : [];
-        const homestay = homestays.find((h: any) => h.ownerId === payload.userId);
+      try {
+        await connectDB();
+        const homestay = await Homestay.findOne({ ownerId: payload.userId }).lean();
         if (homestay) {
-          authenticatedReq.homestayId = homestay._id;
+          authenticatedReq.homestayId = (homestay as any)._id.toString();
         }
-      } else {
-        try {
-          await connectDB();
-          const homestay = await Homestay.findOne({ ownerId: payload.userId }).lean();
-          if (homestay) {
-            authenticatedReq.homestayId = (homestay as any)._id.toString();
-          }
-        } catch (dbError) {
-          console.error('[Auth Middleware] Database error finding homestay:', dbError);
-        }
+      } catch (dbError) {
+        console.error('[Auth Middleware] Database error finding homestay:', dbError);
       }
 
       // Call handler

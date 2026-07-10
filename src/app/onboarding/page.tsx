@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ShaderBackground from '@/components/ShaderBackground';
 import { Building2, MapPin, Home, FileText, Loader2, AlertCircle } from 'lucide-react';
 
 function OnboardingContent() {
@@ -52,19 +53,20 @@ function OnboardingContent() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background transition-colors duration-300 py-12 px-4">
-      <div className="max-w-xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 mb-4">
-            <Building2 className="w-8 h-8" />
+    <main className="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-y-auto">
+      <ShaderBackground />
+      <div className="w-full max-w-xl relative z-10 my-8">
+        <div className="bg-white/90 dark:bg-black/45 backdrop-blur-md rounded-2xl border border-white/30 dark:border-white/10 shadow-2xl p-8 transition-all duration-300">
+          <div className="flex flex-col items-center mb-6">
+            <div className="text-black dark:text-white mb-2">
+              <Building2 className="w-10 h-10 text-[#00C2A9] dark:text-[#00C2A9]" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-1 text-center">Set Up Your Homestay</h1>
+            <p className="text-muted-foreground text-xs text-center max-w-md mx-auto">
+              Welcome to GuestPulse AI! Tell us about your homestay business to customize your dashboard and analytics.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2 font-sans">Set Up Your Homestay</h1>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Welcome to GuestPulse AI! Tell us about your homestay business to customize your dashboard and analytics.
-          </p>
-        </div>
 
-        <div className="bg-card rounded-xl shadow-sm border border-border p-8 transition-colors duration-300">
           {error && (
             <div className="mb-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -76,7 +78,7 @@ function OnboardingContent() {
             {/* Homestay Name */}
             <div>
               <label htmlFor="homestayName" className="block text-sm font-semibold text-foreground mb-1.5 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <Building2 className="w-4 h-4 text-[#00C2A9] dark:text-[#00C2A9]" />
                 Homestay Name *
               </label>
               <input
@@ -94,7 +96,7 @@ function OnboardingContent() {
             {/* Location */}
             <div>
               <label htmlFor="location" className="block text-sm font-semibold text-foreground mb-1.5 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <MapPin className="w-4 h-4 text-[#00C2A9] dark:text-[#00C2A9]" />
                 Location *
               </label>
               <input
@@ -112,7 +114,7 @@ function OnboardingContent() {
             {/* Property Type */}
             <div>
               <label htmlFor="propertyType" className="block text-sm font-semibold text-foreground mb-1.5 flex items-center gap-2">
-                <Home className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <Home className="w-4 h-4 text-[#00C2A9] dark:text-[#00C2A9]" />
                 Property Type *
               </label>
               <select
@@ -136,7 +138,7 @@ function OnboardingContent() {
             {/* Description */}
             <div>
               <label htmlFor="description" className="block text-sm font-semibold text-foreground mb-1.5 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <FileText className="w-4 h-4 text-[#00C2A9] dark:text-[#00C2A9]" />
                 Description (Optional)
               </label>
               <textarea
@@ -154,7 +156,7 @@ function OnboardingContent() {
             <button
               type="submit"
               disabled={isLoading || !homestayName.trim() || !location.trim()}
-              className="w-full mt-2 bg-blue-600 dark:bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full mt-2 bg-[#00C2A9] dark:bg-[#00C2A9] text-white py-3 rounded-lg font-semibold hover:bg-[#00A38E] dark:hover:bg-[#00A38E] disabled:bg-[#00C2A9]/50 dark:disabled:bg-[#00C2A9]/50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               {isLoading ? (
                 <>

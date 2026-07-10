@@ -488,7 +488,7 @@ export async function getBenchmarkingData(homestayId: string, forceRefresh: bool
   if (!cachedBenchmark || forceRefresh || isExpired) {
     const totalCount = await Review.countDocuments({ homestayId: homestayObjId });
     const positiveCount = await Review.countDocuments({ homestayId: homestayObjId, sentiment: 'positive' });
-    const ownerSatisfaction = totalCount > 0 ? Math.round((positiveCount / totalCount) * 100) : 88;
+    const ownerSatisfaction = totalCount > 0 ? Math.round((positiveCount / totalCount) * 100) : 0;
 
     const insights = await generateCompetitiveInsights(homestayName, ownerSatisfaction);
 
@@ -536,20 +536,7 @@ export async function getLoggedActions(homestayId: string) {
   const actions = await Action.find({ homestayId: homestayObjId }).sort({ createdAt: -1 }).lean();
   
   if (actions.length === 0) {
-    // Seed default operational impact action for immediate presentation
-    return [
-      {
-        _id: 'act-sample-1',
-        homestayId,
-        title: 'Upgraded High-Speed Wi-Fi Mesh Network',
-        category: 'amenities',
-        notes: 'Installed dual-band Wi-Fi routers across guest rooms and common areas.',
-        dateLogged: new Date(),
-        complaintReductionPercent: 34,
-        satisfactionImprovementPercent: 14,
-        aiImpactSummary: 'Complaints regarding Wi-Fi speed dropped by 34% following mesh router installation.',
-      },
-    ];
+    return [];
   }
 
   return actions.map(a => ({

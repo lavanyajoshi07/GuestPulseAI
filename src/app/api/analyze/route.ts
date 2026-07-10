@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeReviewWithGemini, generateBusinessSummary } from '@/lib/gemini';
+import { analyzeReviewWithGemini, generateBusinessSummary, extractReviewsFromDocument } from '@/lib/gemini';
 import connectDB from '@/lib/mongodb';
 import Review from '@/models/Review';
 import { withAuth, AuthenticatedRequest } from '@/middleware/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS } from '@/lib/rateLimit';
-import { mockStore } from '@/lib/mockStore';
 import {
   ValidationError,
   DatabaseError,
@@ -45,9 +44,16 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       throw new ValidationError('Invalid JSON in request body');
     }
 
-    // Extract input reviews (could be single `review` string or `reviews` array)
+    // Extract input reviews (could be single `review` string, `reviews` array, or rich fileData base64)
     let reviewsList: string[] = [];
-    if (body.reviews && Array.isArray(body.reviews)) {
+    if (body.fileData && body.mimeType) {
+      try {
+        const extracted = await extractReviewsFromDocument(body.fileData, body.mimeType);
+        reviewsList = extracted.filter((r: any) => typeof r === 'string' && r.trim().length >= 5);
+      } catch (err: any) {
+        throw new AIError(`Failed to parse document with AI: ${err.message}`);
+      }
+    } else if (body.reviews && Array.isArray(body.reviews)) {
       reviewsList = body.reviews.filter((r: any) => typeof r === 'string' && r.trim().length >= 5);
     } else if (body.review && typeof body.review === 'string') {
       // Split multi-line reviews or CSV text rows if user uploaded text/file content into `review`
@@ -63,12 +69,11 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       throw new ValidationError('Please provide valid review text or file content for analysis.');
     }
 
-    // Connect to DB if available
-    let dbConn = null;
+    // Connect to DB
     try {
-      dbConn = await connectDB();
+      await connectDB();
     } catch (err) {
-      console.warn('[DB] Operating in fallback mode');
+      throw new DatabaseError('Failed to connect to database');
     }
 
     let positiveCount = 0;
@@ -102,7 +107,6 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
           summary: textItem.substring(0, 80),
           keywords: ['feedback'],
           keyPoints: ['guest review'],
-          response: 'Thank you for your feedback.',
           improvementSuggestion: sentiment === 'negative' ? `Improve operational quality in ${category}.` : `Maintain high standards in ${category}.`,
           sentimentScore: 0.75,
         };
@@ -121,36 +125,22 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       }
 
       // Save review to DB for homestay history persistence
-      if (dbConn !== null) {
-        try {
-          await Review.create({
-            homestayId,
-            platform: body.filename ? 'file_upload' : 'manual',
-            reviewText: textItem,
-            sentiment: analysisResult.sentiment,
-            category: analysisResult.category,
-            sentimentScore: analysisResult.sentimentScore || 0.85,
-            keywords: analysisResult.keywords || [],
-            keyPoints: analysisResult.keyPoints || [],
-            summary: analysisResult.summary || textItem.substring(0, 80),
-            suggestedResponse: analysisResult.response || 'Thank you!',
-            improvementSuggestion: analysisResult.improvementSuggestion || '',
-            analysis: analysisResult,
-          });
-        } catch (e) {
-          console.error('[DB] Failed to persist analyzed review:', e);
-        }
-      } else {
-        mockStore.createReview(
+      try {
+        await Review.create({
           homestayId,
-          textItem,
-          analysisResult.sentiment,
-          analysisResult.category as any,
-          0.85,
-          analysisResult.keywords || [],
-          analysisResult.response || 'Thank you!',
-          analysisResult.summary || textItem.substring(0, 80)
-        );
+          platform: body.filename ? 'file_upload' : 'manual',
+          reviewText: textItem,
+          sentiment: analysisResult.sentiment,
+          category: analysisResult.category,
+          sentimentScore: analysisResult.sentimentScore || 0.85,
+          keywords: analysisResult.keywords || [],
+          keyPoints: analysisResult.keyPoints || [],
+          summary: analysisResult.summary || textItem.substring(0, 80),
+          improvementSuggestion: analysisResult.improvementSuggestion || '',
+          analysis: analysisResult,
+        });
+      } catch (e) {
+        console.error('[DB] Failed to persist analyzed review:', e);
       }
     }
 
@@ -184,7 +174,6 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       summary: lastAnalysis?.summary || 'Review analyzed',
       keywords: lastAnalysis?.keywords || [],
       keyPoints: lastAnalysis?.keyPoints || [],
-      suggestedResponse: lastAnalysis?.response || 'Thank you for staying with us!',
       improvementSuggestion: lastAnalysis?.improvementSuggestion || aiSuggestions,
     };
 

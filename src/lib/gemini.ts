@@ -11,45 +11,107 @@ const CANDIDATE_MODELS = [
   process.env.GEMINI_MODEL,
   'gemini-2.5-flash',
   'gemini-2.0-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-pro',
-  'gemini-1.5-flash',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash',
 ].filter(Boolean) as string[];
 
-async function queryGemini(prompt: string): Promise<string> {
+export async function extractReviewsFromDocument(
+  fileBase64: string,
+  mimeType: string
+): Promise<string[]> {
+  const prompt = `You are an expert document parser. Extract all individual guest reviews verbatim from the provided document or image.
+Return ONLY a valid JSON object with a single "reviews" key mapping to an array of strings. Do not include any explanations, formatting, markdown or backticks.
+
+Example:
+{
+  "reviews": [
+    "Clean rooms but bathroom geyser had issues.",
+    "Warm welcome and amazing breakfast!"
+  ]
+}`;
+
+  const payload = {
+    contents: [
+      {
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType,
+              data: fileBase64
+            }
+          }
+        ]
+      }
+    ]
+  };
+
+  try {
+    const content = await queryGemini(payload);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('No valid JSON returned from document extraction');
+    }
+    const parsed = JSON.parse(jsonMatch[0]);
+    return Array.isArray(parsed.reviews) ? parsed.reviews : [];
+  } catch (error) {
+    console.error('[Gemini] Document extraction failed:', error);
+    throw error;
+  }
+}
+
+async function queryGemini(promptOrPayload: string | any): Promise<string> {
   if (!GEMINI_API_KEY) {
     throw new Error('Gemini API key is not configured');
   }
 
   let lastError: Error | null = null;
+  const isPayload = typeof promptOrPayload !== 'string';
 
   for (const model of CANDIDATE_MODELS) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
     try {
+      const requestBody = isPayload 
+        ? promptOrPayload 
+        : {
+            contents: [
+              {
+                parts: [
+                  {
+                    text: promptOrPayload,
+                  },
+                ],
+              },
+            ],
+          };
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const message = errorData.error?.message || response.statusText;
-        // If model not found or unsupported, try next candidate model in fallback array
-        if (response.status === 404 || message.includes('not found') || message.includes('not supported')) {
-          console.warn(`[Gemini] Model ${model} unavailable, trying next candidate...`);
+        
+        // Handle transient failures (429 rate limits, 503 overloads, temporary high demand) by trying the next model
+        const isTransient = response.status === 404 || 
+                            response.status === 429 || 
+                            response.status === 503 ||
+                            message.toLowerCase().includes('not found') || 
+                            message.toLowerCase().includes('not supported') || 
+                            message.toLowerCase().includes('high demand') ||
+                            message.toLowerCase().includes('overloaded') ||
+                            message.toLowerCase().includes('temporary') ||
+                            message.toLowerCase().includes('quota');
+                            
+        if (isTransient) {
+          console.warn(`[Gemini] Model ${model} transient error (${message}). Trying next candidate...`);
           lastError = new Error(`Model ${model}: ${message}`);
           continue;
         }
@@ -60,11 +122,9 @@ async function queryGemini(prompt: string): Promise<string> {
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       if (text) return text;
     } catch (err: any) {
-      if (err.message?.includes('not found') || err.message?.includes('not supported')) {
-        lastError = err;
-        continue;
-      }
-      throw err;
+      console.warn(`[Gemini] Error querying ${model}: ${err.message || err}. Trying next candidate...`);
+      lastError = err;
+      continue;
     }
   }
 
@@ -86,7 +146,6 @@ Return this exact JSON format:
   "category": "cleanliness | communication | location | amenities | host | value | other",
   "summary": "Brief 1-sentence summary of guest feedback",
   "keywords": ["keyword1", "keyword2"],
-  "response": "Professional response suggestion to post back to guest",
   "improvementSuggestion": "1-2 practical, actionable steps the homestay owner can take to improve operational quality or guest satisfaction",
   "keyPoints": ["key point 1", "key point 2"]
 }`;
@@ -131,8 +190,6 @@ Return this exact JSON format:
       summary: analysis.summary || reviewText.substring(0, 80) + '...',
       keywords: Array.isArray(analysis.keywords) ? analysis.keywords : [],
       keyPoints: Array.isArray(analysis.keyPoints) ? analysis.keyPoints : [],
-      response: analysis.response || analysis.suggestedResponse || 'Thank you for staying with us!',
-      suggestedResponse: analysis.response || analysis.suggestedResponse || 'Thank you for staying with us!',
       improvementSuggestion: analysis.improvementSuggestion || defaultImprovement,
       sentimentScore: 0.85,
     };

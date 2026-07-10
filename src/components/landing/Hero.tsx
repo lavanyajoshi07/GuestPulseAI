@@ -89,7 +89,7 @@ export default function Hero() {
         />
 
         {/* Layer 3: Dark Cinematic Gradient Overlay */}
-        <div className="absolute inset-0 bg-black/45 z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/45 to-black/85 z-10 pointer-events-none" />
 
         {/* Layer 4: Cinematic Film Grain Layer */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-15">

@@ -4,8 +4,6 @@ import User from '@/models/User';
 import Homestay from '@/models/Homestay';
 import { generateToken, setAuthCookie } from '@/lib/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
-import { mockStore } from '@/lib/mockStore';
-import bcryptjs from 'bcryptjs';
 import {
   ValidationError,
   DatabaseError,
@@ -42,41 +40,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Connect to database
-    let dbConn;
     try {
-      dbConn = await connectDB();
+      await connectDB();
     } catch (error) {
       throw new DatabaseError('Failed to connect to database');
-    }
-
-    if (dbConn === null) {
-      // Mock mode fallback
-      const user = mockStore.findUserByEmail(email);
-      if (!user) {
-        throw new ValidationError('Invalid email or password');
-      }
-
-      const isPasswordValid = bcryptjs.compareSync(password, user.passwordHash);
-      if (!isPasswordValid) {
-        throw new ValidationError('Invalid email or password');
-      }
-
-      const token = await generateToken(user._id, user.email);
-      await setAuthCookie(token);
-
-      const homestay = mockStore.getHomestayByOwnerId(user._id);
-
-      return NextResponse.json({
-        success: true,
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          hasHomestay: !!homestay,
-        },
-        message: 'Login successful',
-      });
     }
 
     // Find user

@@ -1,4 +1,5 @@
 import LoginForm from '@/components/LoginForm';
+import ShaderBackground from '@/components/ShaderBackground';
 
 export const metadata = {
   title: 'Sign In - GuestPulseAI',
@@ -7,7 +8,8 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50/50 via-background to-background dark:from-blue-950/15 dark:via-background dark:to-background flex items-center justify-center px-4 transition-colors duration-300">
+    <main className="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-y-auto">
+      <ShaderBackground />
       <LoginForm />
     </main>
   );

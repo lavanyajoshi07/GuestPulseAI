@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { BarChart3 } from 'lucide-react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -11,10 +10,25 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 pb-12 border-b border-border/40">
         {/* Brand Column */}
         <div className="space-y-4 md:col-span-1">
-          <Link href="/" className="flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-[#3CB371]/10 border border-[#3CB371]/20 dark:bg-[#3CB371]/15 overflow-hidden transition-all duration-300 group-hover:border-[#3CB371]/40 group-hover:shadow-[0_0_12px_rgba(60,179,113,0.25)]">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 text-[#3CB371] transition-transform duration-300 group-hover:scale-110"
+              >
+                <path
+                  d="M3 12H7L9.5 5L13.5 19L16 10L18 13H21"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
             <span className="text-xl font-bold tracking-tight text-foreground font-sans">
-              GuestPulse AI
+              GuestPulse<span className="text-[#3CB371]">AI</span>
             </span>
           </Link>
           <p className="text-xs text-muted-foreground font-light leading-relaxed">

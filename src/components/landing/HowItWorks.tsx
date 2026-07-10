@@ -69,7 +69,10 @@ export default function HowItWorks() {
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-4 xl:gap-7">
+        <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-4 xl:gap-7">
+          {/* Dashed progression line running behind the cards on large screens */}
+          <div className="hidden xl:block absolute top-[28%] left-[10%] right-[10%] border-t-2 border-dashed border-[#C49A5A]/15 pointer-events-none z-0" />
+
           {steps.map((step, index) => (
             <motion.article
               key={step.title}
@@ -77,17 +80,16 @@ export default function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.35 }}
               transition={{ duration: 0.45, delay: index * 0.08 }}
-              whileHover={{ y: -6 }}
-              className="group h-full"
+              whileHover={{ y: -8 }}
+              className="group h-full relative z-10"
             >
-              <div className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-[24px] border border-[#C49A5A] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.08)] transition-all duration-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.14)] dark:bg-[#17212B] dark:shadow-[0_12px_32px_rgba(0,0,0,0.35)] dark:hover:shadow-[0_20px_48px_rgba(0,0,0,0.48)]">
-                <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-6 md:px-7 md:pt-7">
-                  <span className="text-base md:text-lg font-bold tracking-[0.42em] text-[#C49A5A]">
-                    {step.number}
-                  </span>
-                </div>
+              <div className="relative flex h-full min-h-[420px] flex-col overflow-hidden rounded-[24px] border border-[#C49A5A]/20 bg-white/95 backdrop-blur-sm shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-all duration-300 hover:shadow-[0_20px_40px_rgba(60,179,113,0.08)] hover:border-[#3CB371]/40 dark:border-[#C49A5A]/10 dark:bg-[#17212B]/95 dark:shadow-[0_12px_32px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_24px_48px_rgba(0,0,0,0.45)]">
+                {/* Massive Watermark Step Number */}
+                <span className="absolute top-4 right-6 text-6xl md:text-7xl font-extrabold text-[#C49A5A]/10 dark:text-[#C49A5A]/8 tracking-tighter select-none font-sans group-hover:text-[#3CB371]/15 group-hover:scale-105 transition-all duration-300">
+                  {step.number}
+                </span>
 
-                <div className="flex flex-1 flex-col px-6 pb-6 md:px-7 md:pb-7">
+                <div className="flex flex-1 flex-col px-6 pb-6 pt-12 md:px-7 md:pb-7">
                   <div className="mb-4 flex flex-1 items-center justify-center">
                     <div className="relative flex h-full w-full items-center justify-center py-1">
                       <Image
