@@ -1,4 +1,5 @@
 // Input Validation Utilities for ReviewLens AI
+import { z } from 'zod';
 
 import { ValidationError } from './errors';
 
@@ -116,3 +117,48 @@ export function validateAnalyzeRequest(body: any): AnalyzeRequest {
 
   return { review: review.trim() };
 }
+
+// Zod schemas for user authentication
+export const RegisterSchema = z.object({
+  email: z.string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email'),
+  password: z.string()
+    .min(1, 'Password is required')
+    .min(6, 'Password must be at least 6 characters'),
+  passwordConfirm: z.string()
+    .min(1, 'Password confirmation is required'),
+  name: z.string()
+    .min(1, 'Name is required')
+    .trim(),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: "Passwords do not match",
+  path: ["passwordConfirm"],
+});
+
+export const LoginSchema = z.object({
+  email: z.string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email'),
+  password: z.string()
+    .min(1, 'Password is required'),
+});
+
+export function validateRegisterRequest(body: any) {
+  const result = RegisterSchema.safeParse(body);
+  if (!result.success) {
+    const error = result.error.issues[0];
+    throw new ValidationError(error.message, error.path.join('.') || undefined);
+  }
+  return result.data;
+}
+
+export function validateLoginRequest(body: any) {
+  const result = LoginSchema.safeParse(body);
+  if (!result.success) {
+    const error = result.error.issues[0];
+    throw new ValidationError(error.message, error.path.join('.') || undefined);
+  }
+  return result.data;
+}
+

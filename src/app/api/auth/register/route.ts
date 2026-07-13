@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { generateToken, setAuthCookie } from '@/lib/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
+import { validateRegisterRequest } from '@/lib/validation';
 import {
   ValidationError,
   DatabaseError,
@@ -27,34 +28,7 @@ export async function POST(request: NextRequest) {
       throw new ValidationError('Invalid JSON in request body');
     }
 
-    const { email, password, passwordConfirm, name } = body;
-
-    // Validate inputs
-    if (!email || typeof email !== 'string') {
-      throw new ValidationError('Email is required', 'email');
-    }
-
-    if (!password || typeof password !== 'string') {
-      throw new ValidationError('Password is required', 'password');
-    }
-
-    if (passwordConfirm !== password) {
-      throw new ValidationError('Passwords do not match', 'passwordConfirm');
-    }
-
-    if (password.length < 6) {
-      throw new ValidationError('Password must be at least 6 characters', 'password');
-    }
-
-    if (!name || typeof name !== 'string') {
-      throw new ValidationError('Name is required', 'name');
-    }
-
-    // Email validation regex
-    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(email)) {
-      throw new ValidationError('Please enter a valid email', 'email');
-    }
+    const { email, password, name } = validateRegisterRequest(body);
 
     // Connect to database
     try {
@@ -67,7 +41,11 @@ export async function POST(request: NextRequest) {
     try {
       const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (existingUser) {
-        throw new ValidationError('Email already registered', 'email');
+        return NextResponse.json({
+          success: false,
+          error: 'An account with this email already exists. Please continue with Login.',
+          code: 'EMAIL_ALREADY_EXISTS'
+        }, { status: 409 });
       }
 
       const user = new User({

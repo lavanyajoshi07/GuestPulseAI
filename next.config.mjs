@@ -14,6 +14,7 @@ const nextConfig = {
     '192.168.31.150'
   ],
 
+  /*
   async rewrites() {
     return [
       {
@@ -22,6 +23,7 @@ const nextConfig = {
       },
     ];
   },
+  */
 }
 
 export default nextConfig

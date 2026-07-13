@@ -3,18 +3,144 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { body, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const { users, reviews } = require('./data');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Middlewares
+// CORS configuration (allow only the frontend origin in production)
+const frontendOrigin = process.env.NODE_ENV === 'production'
+  ? (process.env.FRONTEND_URL || 'https://guestpulseai.vercel.app')
+  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: frontendOrigin,
   credentials: true
 }));
 app.use(express.json());
+
+// Rate Limiter for Auth endpoints (max 5 login attempts per 15 min)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: {
+    success: false,
+    error: 'Too many attempts, please try again after 15 minutes',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Validation rules
+const registerValidation = [
+  body('email').isEmail().withMessage('Please enter a valid email').normalizeEmail(),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: errors.array()[0].msg });
+    }
+    next();
+  }
+];
+
+const loginValidation = [
+  body('email').isEmail().withMessage('Please enter a valid email').normalizeEmail(),
+  body('password').notEmpty().withMessage('Password is required'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: errors.array()[0].msg });
+    }
+    next();
+  }
+];
+
+
+// Passport.js configuration
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const GitHubStrategy = require('passport-github2').Strategy;
+
+app.use(passport.initialize());
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID || 'mock-google-id',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'mock-google-secret',
+    callbackURL: "/api/auth/google/callback",
+    passReqToCallback: true
+  },
+  function(req, accessToken, refreshToken, profile, done) {
+    const email = profile.emails?.[0]?.value?.toLowerCase();
+    if (!email) {
+      return done(new Error("No email found in Google account"));
+    }
+    const flow = req.query.state || 'login';
+    let user = users.find(u => u.email.toLowerCase() === email);
+
+    if (flow === 'register') {
+      if (user) {
+        req.oauth_message = 'already_registered';
+      } else {
+        user = {
+          _id: 'mock-user-' + Date.now(),
+          name: profile.displayName || 'Google User',
+          email: email,
+          createdAt: new Date()
+        };
+        users.push(user);
+      }
+      return done(null, user);
+    } else {
+      if (user) {
+        return done(null, user);
+      } else {
+        req.oauth_error = 'register_required';
+        return done(null, false, { message: 'register_required' });
+      }
+    }
+  }
+));
+
+passport.use(new GitHubStrategy({
+    clientID: process.env.GITHUB_CLIENT_ID || 'mock-github-id',
+    clientSecret: process.env.GITHUB_CLIENT_SECRET || 'mock-github-secret',
+    callbackURL: "/api/auth/github/callback",
+    passReqToCallback: true
+  },
+  function(req, accessToken, refreshToken, profile, done) {
+    const email = profile.emails?.[0]?.value?.toLowerCase() || `${profile.username}@github.com`;
+    const flow = req.query.state || 'login';
+    let user = users.find(u => u.email.toLowerCase() === email);
+
+    if (flow === 'register') {
+      if (user) {
+        req.oauth_message = 'already_registered';
+      } else {
+        user = {
+          _id: 'mock-user-' + Date.now(),
+          name: profile.displayName || profile.username || 'GitHub User',
+          email: email,
+          createdAt: new Date()
+        };
+        users.push(user);
+      }
+      return done(null, user);
+    } else {
+      if (user) {
+        return done(null, user);
+      } else {
+        req.oauth_error = 'register_required';
+        return done(null, false, { message: 'register_required' });
+      }
+    }
+  }
+));
 
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
@@ -139,16 +265,16 @@ Return this exact JSON format:
 // Authentication Endpoints
 // -------------------------------------------------------------
 
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', authLimiter, registerValidation, (req, res) => {
   const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({ success: false, error: 'Name, email and password are required' });
-  }
 
   const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (existingUser) {
-    return res.status(400).json({ success: false, error: 'User with this email already exists' });
+    return res.status(409).json({ 
+      success: false, 
+      error: 'An account with this email already exists. Please continue with Login.',
+      code: 'EMAIL_ALREADY_EXISTS' 
+    });
   }
 
   const salt = bcrypt.genSaltSync(10);
@@ -178,16 +304,16 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', authLimiter, loginValidation, (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Email and password are required' });
-  }
 
   const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!user) {
-    return res.status(400).json({ success: false, error: 'Invalid email or password' });
+    return res.status(404).json({ 
+      success: false, 
+      error: 'Account not found. Please register first.',
+      code: 'ACCOUNT_NOT_FOUND' 
+    });
   }
 
   const isPasswordValid = bcrypt.compareSync(password, user.passwordHash);
@@ -211,6 +337,78 @@ app.post('/api/auth/login', (req, res) => {
 
 app.post('/api/auth/logout', (req, res) => {
   res.status(200).json({ success: true, message: 'Logged out successfully' });
+});
+
+// Google OAuth endpoints
+app.get('/api/auth/google', (req, res, next) => {
+  const flow = req.query.flow || 'login';
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'], 
+    state: flow,
+    session: false 
+  })(req, res, next);
+});
+
+app.get('/api/auth/google/callback', (req, res, next) => {
+  passport.authenticate('google', { session: false }, (err, user, info) => {
+    const clientUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    
+    if (req.oauth_error === 'register_required') {
+      res.cookie('oauth_error', 'register_required', { maxAge: 60000, path: '/' });
+      return res.redirect(`${clientUrl}/auth/login`);
+    }
+
+    if (err || !user) {
+      return res.redirect(`${clientUrl}/auth/login?error=AccessDenied`);
+    }
+
+    if (req.oauth_message === 'already_registered') {
+      res.cookie('oauth_message', 'already_registered', { maxAge: 60000, path: '/' });
+    }
+
+    const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    res.redirect(`${clientUrl}/auth/login?token=${token}&user=${encodeURIComponent(JSON.stringify({
+      id: user._id,
+      name: user.name,
+      email: user.email
+    }))}`);
+  })(req, res, next);
+});
+
+// GitHub OAuth endpoints
+app.get('/api/auth/github', (req, res, next) => {
+  const flow = req.query.flow || 'login';
+  passport.authenticate('github', { 
+    scope: ['user:email'], 
+    state: flow,
+    session: false 
+  })(req, res, next);
+});
+
+app.get('/api/auth/github/callback', (req, res, next) => {
+  passport.authenticate('github', { session: false }, (err, user, info) => {
+    const clientUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    
+    if (req.oauth_error === 'register_required') {
+      res.cookie('oauth_error', 'register_required', { maxAge: 60000, path: '/' });
+      return res.redirect(`${clientUrl}/auth/login`);
+    }
+
+    if (err || !user) {
+      return res.redirect(`${clientUrl}/auth/login?error=AccessDenied`);
+    }
+
+    if (req.oauth_message === 'already_registered') {
+      res.cookie('oauth_message', 'already_registered', { maxAge: 60000, path: '/' });
+    }
+
+    const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    res.redirect(`${clientUrl}/auth/login?token=${token}&user=${encodeURIComponent(JSON.stringify({
+      id: user._id,
+      name: user.name,
+      email: user.email
+    }))}`);
+  })(req, res, next);
 });
 
 // -------------------------------------------------------------

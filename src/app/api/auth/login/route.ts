@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Homestay from '@/models/Homestay';
 import { generateToken, setAuthCookie } from '@/lib/auth';
 import { rateLimitMiddleware, RATE_LIMIT_CONFIGS, getClientIp } from '@/lib/rateLimit';
+import { validateLoginRequest } from '@/lib/validation';
 import {
   ValidationError,
   DatabaseError,
@@ -28,16 +29,7 @@ export async function POST(request: NextRequest) {
       throw new ValidationError('Invalid JSON in request body');
     }
 
-    const { email, password } = body;
-
-    // Validate inputs
-    if (!email || typeof email !== 'string') {
-      throw new ValidationError('Email is required', 'email');
-    }
-
-    if (!password || typeof password !== 'string') {
-      throw new ValidationError('Password is required', 'password');
-    }
+    const { email, password } = validateLoginRequest(body);
 
     // Connect to database
     try {
@@ -52,7 +44,11 @@ export async function POST(request: NextRequest) {
       user = await User.findOne({ email: email.toLowerCase() }).select('+password');
 
       if (!user) {
-        throw new ValidationError('Invalid email or password');
+        return NextResponse.json({
+          success: false,
+          error: 'Account not found. Please register first.',
+          code: 'ACCOUNT_NOT_FOUND'
+        }, { status: 404 });
       }
     } catch (error) {
       if (error instanceof ValidationError) throw error;
