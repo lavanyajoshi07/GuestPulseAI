@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Homestay from '@/models/Homestay';
+import { auth } from '@/auth';
 
 export interface AuthenticatedRequest extends NextRequest {
   userId?: string;
@@ -14,16 +15,45 @@ export async function withAuth(
 ) {
   return async (req: NextRequest) => {
     try {
-      // Get token from header
-      const authHeader = req.headers.get('Authorization');
-      let token = extractTokenFromHeader(authHeader || '');
+      let userId = '';
+      let userEmail = '';
 
-      // Fallback to cookie if no header
-      if (!token) {
-        token = req.cookies.get('auth_token')?.value || '';
+      // 1. Check NextAuth Session first
+      const session = await auth();
+      if (session?.user) {
+        userId = session.user.id || '';
+        userEmail = session.user.email || '';
       }
 
-      if (!token) {
+      // 2. Fallback to custom JWT token
+      if (!userId) {
+        const authHeader = req.headers.get('Authorization');
+        let token = extractTokenFromHeader(authHeader || '');
+
+        if (!token) {
+          token = req.cookies.get('auth_token')?.value || '';
+        }
+
+        if (token) {
+          const payload = await verifyToken(token);
+          if (payload) {
+            userId = payload.userId;
+            userEmail = payload.email;
+          } else {
+            return NextResponse.json(
+              {
+                success: false,
+                error: 'Invalid or expired token',
+                code: 'AUTH_INVALID',
+              },
+              { status: 401 }
+            );
+          }
+        }
+      }
+
+      // 3. Reject if unauthenticated
+      if (!userId) {
         return NextResponse.json(
           {
             success: false,
@@ -34,29 +64,15 @@ export async function withAuth(
         );
       }
 
-      // Verify token
-      const payload = await verifyToken(token);
-
-      if (!payload) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Invalid or expired token',
-            code: 'AUTH_INVALID',
-          },
-          { status: 401 }
-        );
-      }
-
       // Attach user info to request
       const authenticatedReq = req as AuthenticatedRequest;
-      authenticatedReq.userId = payload.userId;
-      authenticatedReq.userEmail = payload.email;
+      authenticatedReq.userId = userId;
+      authenticatedReq.userEmail = userEmail;
 
       // Retrieve owner's homestay (for multi-tenant scoping)
       try {
         await connectDB();
-        const homestay = await Homestay.findOne({ ownerId: payload.userId }).lean();
+        const homestay = await Homestay.findOne({ ownerId: userId }).lean();
         if (homestay) {
           authenticatedReq.homestayId = (homestay as any)._id.toString();
         }

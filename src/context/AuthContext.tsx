@@ -128,8 +128,16 @@ function AuthInnerProvider({ children }: { children: React.ReactNode }) {
     Cookies.remove('auth_token');
     Cookies.remove('user');
     
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('[Auth] Failed to call server-side logout API:', e);
+    }
+    
     if (status === 'authenticated') {
       await nextAuthSignOut({ redirect: true, callbackUrl: '/auth/login' });
+    } else {
+      window.location.href = '/auth/login';
     }
   };
 

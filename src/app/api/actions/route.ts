@@ -87,6 +87,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         title: body.title,
         category: body.category,
         notes: body.notes,
+        proactiveCardId: body.proactiveCardId,
       });
       return NextResponse.json({
         success: true,

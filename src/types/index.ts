@@ -68,22 +68,6 @@ export interface PredictiveAnalytics {
   accuracyScore: number;
 }
 
-export interface PropertyComparison {
-  propertyName: string;
-  satisfactionRate: number;
-  topCategory: string;
-  status: 'Best Performer' | 'Needs Attention' | 'Average';
-}
-
-export interface BenchmarkingData {
-  homestayName: string;
-  industryAverageSatisfaction: number;
-  ownerSatisfaction: number;
-  regionalCleanlinessScore: number;
-  regionalHostScore: number;
-  competitiveInsights: string[];
-  propertyComparisons: PropertyComparison[];
-}
 
 export interface LoggedAction {
   _id?: string;

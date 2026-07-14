@@ -12,9 +12,9 @@ export interface RateLimitConfig {
 }
 
 export const RATE_LIMIT_CONFIGS = {
-  auth: { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 req per 15 minutes
-  analyze: { maxRequests: 30, windowMs: 60 * 60 * 1000 }, // 30 req per hour
-  api: { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 req per hour
+  auth: { maxRequests: 100, windowMs: 15 * 60 * 1000 }, // Increased to 100 to prevent local testing blocks
+  analyze: { maxRequests: 100, windowMs: 60 * 60 * 1000 },
+  api: { maxRequests: 500, windowMs: 60 * 60 * 1000 },
 };
 
 export function getClientIp(request: NextRequest): string {

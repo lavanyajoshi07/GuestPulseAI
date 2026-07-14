@@ -5,10 +5,9 @@ import Review from '@/models/Review';
 import Homestay from '@/models/Homestay';
 import MonthlySummary from '@/models/MonthlySummary';
 import Prediction from '@/models/Prediction';
-import Benchmark from '@/models/Benchmark';
 import Action from '@/models/Action';
 import Forecast from '@/models/Forecast';
-import { generateBusinessSummary, generatePredictiveAnalytics as generateAIPredictions, generateCompetitiveInsights, generateActionImpactSummary, generateLoyaltyForecast } from './gemini';
+import { generateBusinessSummary, generatePredictiveAnalytics as generateAIPredictions, generateActionImpactSummary, generateLoyaltyForecast } from './gemini';
 import type { Sentiment, Category } from '@/types';
 import mongoose from 'mongoose';
 
@@ -474,61 +473,6 @@ export async function getPredictiveAnalytics(homestayId: string, forceRefresh: b
   };
 }
 
-export async function getBenchmarkingData(homestayId: string, forceRefresh: boolean = false) {
-  await connectDB();
-
-  const homestayObjId = new mongoose.Types.ObjectId(homestayId);
-  const homestayDoc = await Homestay.findById(homestayObjId).lean();
-  const homestayName = homestayDoc?.homestayName || 'Homestay';
-
-  let cachedBenchmark = await Benchmark.findOne({ homestayId: homestayObjId }).sort({ createdAt: -1 });
-
-  const isExpired = cachedBenchmark ? (Date.now() - new Date(cachedBenchmark.createdAt).getTime() > 7 * 24 * 60 * 60 * 1000) : true;
-
-  if (!cachedBenchmark || forceRefresh || isExpired) {
-    const totalCount = await Review.countDocuments({ homestayId: homestayObjId });
-    const positiveCount = await Review.countDocuments({ homestayId: homestayObjId, sentiment: 'positive' });
-    const ownerSatisfaction = totalCount > 0 ? Math.round((positiveCount / totalCount) * 100) : 0;
-
-    const insights = await generateCompetitiveInsights(homestayName, ownerSatisfaction);
-
-    const defaultComparisons = [
-      { propertyName: homestayName, satisfactionRate: ownerSatisfaction, topCategory: 'host', status: ownerSatisfaction >= 85 ? 'Best Performer' as const : 'Average' as const },
-    ];
-
-    cachedBenchmark = await Benchmark.create({
-      homestayId: homestayObjId,
-      industryAverageSatisfaction: 78,
-      ownerSatisfaction,
-      regionalCleanlinessScore: 82,
-      regionalHostScore: 85,
-      competitiveInsights: insights,
-      propertyComparisons: defaultComparisons,
-    });
-  }
-
-  const filteredComparisons = (cachedBenchmark.propertyComparisons || []).filter(
-    (p: any) => p.propertyName === homestayName
-  );
-  if (filteredComparisons.length === 0) {
-    filteredComparisons.push({
-      propertyName: homestayName,
-      satisfactionRate: cachedBenchmark.ownerSatisfaction,
-      topCategory: 'host',
-      status: cachedBenchmark.ownerSatisfaction >= 85 ? 'Best Performer' : 'Average',
-    });
-  }
-
-  return {
-    homestayName,
-    industryAverageSatisfaction: cachedBenchmark.industryAverageSatisfaction,
-    ownerSatisfaction: cachedBenchmark.ownerSatisfaction,
-    regionalCleanlinessScore: cachedBenchmark.regionalCleanlinessScore,
-    regionalHostScore: cachedBenchmark.regionalHostScore,
-    competitiveInsights: cachedBenchmark.competitiveInsights,
-    propertyComparisons: filteredComparisons,
-  };
-}
 
 export async function getLoggedActions(homestayId: string) {
   await connectDB();
@@ -552,7 +496,7 @@ export async function getLoggedActions(homestayId: string) {
   }));
 }
 
-export async function createLoggedAction(homestayId: string, data: { title: string; category: string; notes?: string }) {
+export async function createLoggedAction(homestayId: string, data: { title: string; category: string; notes?: string; proactiveCardId?: string }) {
   await connectDB();
   const homestayObjId = new mongoose.Types.ObjectId(homestayId);
   const impactSummary = await generateActionImpactSummary(data.title, data.category, data.notes || '');
@@ -569,6 +513,31 @@ export async function createLoggedAction(homestayId: string, data: { title: stri
   });
 
   await newAction.save();
+
+  // Find the latest Prediction for the homestay and mark the matching card as actionTaken = true
+  const latestPrediction = await Prediction.findOne({ homestayId: homestayObjId }).sort({ createdAt: -1 });
+  if (latestPrediction && latestPrediction.proactiveActionCards) {
+    let updated = false;
+    latestPrediction.proactiveActionCards = latestPrediction.proactiveActionCards.map((card: any) => {
+      const isMatch = data.proactiveCardId
+        ? card.id === data.proactiveCardId
+        : (card.category.toLowerCase() === data.category.toLowerCase() &&
+           (data.title.toLowerCase().includes(card.title.toLowerCase()) ||
+            card.title.toLowerCase().includes(data.title.toLowerCase())));
+
+      if (isMatch && !card.actionTaken) {
+        card.actionTaken = true;
+        updated = true;
+      }
+      return card;
+    });
+
+    if (updated) {
+      latestPrediction.markModified('proactiveActionCards');
+      await latestPrediction.save();
+    }
+  }
+
   return {
     _id: newAction._id.toString(),
     homestayId,
@@ -612,12 +581,32 @@ export async function getExperienceForecast(homestayId: string, forceRefresh: bo
     });
   }
 
+  // Calculate dynamic scores based on logged actions to show the live impact
+  const loggedActions = await Action.find({ homestayId: homestayObjId }).lean();
+  
+  let predictedNPS = cachedForecast.predictedNPS;
+  let repeatBookingProbability = cachedForecast.repeatBookingProbability;
+  
+  loggedActions.forEach(action => {
+    const npsIncrease = Math.round((action.satisfactionImprovementPercent || 12) / 4);
+    predictedNPS += npsIncrease;
+    
+    const loyaltyIncrease = Math.round((action.complaintReductionPercent || 24) / 6);
+    repeatBookingProbability += loyaltyIncrease;
+  });
+  
+  if (predictedNPS > 96) predictedNPS = 96;
+  if (repeatBookingProbability > 95) repeatBookingProbability = 95;
+  
+  const npsChange = predictedNPS - 75;
+  const loyaltyRiskLevel = repeatBookingProbability >= 85 ? 'low' : 'medium';
+
   return {
     homestayName,
-    predictedNPS: cachedForecast.predictedNPS,
-    npsChange: cachedForecast.npsChange,
-    repeatBookingProbability: cachedForecast.repeatBookingProbability,
-    loyaltyRiskLevel: cachedForecast.loyaltyRiskLevel,
+    predictedNPS,
+    npsChange,
+    repeatBookingProbability,
+    loyaltyRiskLevel,
     loyaltyInsights: cachedForecast.loyaltyInsights,
     npsTrend: cachedForecast.npsTrend,
   };

@@ -12,91 +12,91 @@ function parseAIInsight(rawText: any) {
   const result = {
     topAssets: [] as { title: string; description: string }[],
     operationalRisks: [] as { title: string; description: string }[],
-    strategicRecommendation: { title: 'Strategic Recommendation', description: '' }
+    businessSummary: {
+      plusPoints: [] as string[],
+      problems: [] as string[],
+      fixes: [] as string[]
+    }
   };
 
   if (!rawText) return null;
 
-  // Support pre-parsed objects from historical payloads
+  // Support pre-parsed objects
   if (typeof rawText === 'object') {
     return {
       topAssets: rawText.topAssets || [],
       operationalRisks: rawText.operationalRisks || [],
-      strategicRecommendation: rawText.strategicRecommendation || { title: 'Strategic Recommendation', description: '' }
+      businessSummary: rawText.businessSummary || { plusPoints: [], problems: [], fixes: [] }
     };
   }
 
   if (typeof rawText !== 'string') return null;
 
-  // Check if it's already a JSON string
+  // 1. Check if it's already a JSON string of businessSummary
   try {
-    const parsed = JSON.parse(rawText);
-    if (parsed.topAssets || parsed.operationalRisks || parsed.strategicRecommendation) {
+    const cleanedText = rawText.trim().replace(/^```json\s*/i, '').replace(/```$/, '');
+    const parsed = JSON.parse(cleanedText);
+    
+    // If it has topAssets/operationalRisks wrap structure
+    if (parsed.topAssets || parsed.operationalRisks || parsed.businessSummary) {
       return {
         topAssets: parsed.topAssets || [],
         operationalRisks: parsed.operationalRisks || [],
-        strategicRecommendation: parsed.strategicRecommendation || { title: 'Strategic Recommendation', description: '' }
+        businessSummary: parsed.businessSummary || { plusPoints: [], problems: [], fixes: [] }
       };
+    }
+
+    // If it's a parsed businessSummary JSON directly
+    if (Array.isArray(parsed.plusPoints) || Array.isArray(parsed.problems) || Array.isArray(parsed.fixes)) {
+      result.businessSummary.plusPoints = parsed.plusPoints || [];
+      result.businessSummary.problems = parsed.problems || [];
+      result.businessSummary.fixes = parsed.fixes || [];
+      return result;
     }
   } catch (e) {
     // Continue parsing as raw text
   }
 
-  // Parse markdown format on-the-fly
+  // 2. Fallback: Parse markdown sections on-the-fly
   const lines = rawText.split('\n');
-  let currentSection: 'none' | 'positive' | 'complaints' | 'recommendation' = 'none';
+  let currentSection: 'none' | 'plus' | 'problems' | 'fixes' = 'none';
 
-  for (let line of lines) {
+  for (const line of lines) {
     const cleanLine = line.trim();
     if (!cleanLine) continue;
 
     const lowerLine = cleanLine.toLowerCase();
 
-    // Check if it's a section header line (not a bullet/list item)
-    const isHeader = (
-      (lowerLine.startsWith('**') && lowerLine.endsWith('**')) ||
-      lowerLine.startsWith('###') ||
-      lowerLine.startsWith('##') ||
-      lowerLine.endsWith(':')
-    );
-
-    if (isHeader) {
-      if (lowerLine.includes('actionable') || lowerLine.includes('strategic') || lowerLine.includes('recommendation') || lowerLine.includes('plan')) {
-        currentSection = 'recommendation';
-        continue;
-      } else if (lowerLine.includes('positive') || lowerLine.includes('brand asset') || lowerLine.includes('appreciate')) {
-        currentSection = 'positive';
-        continue;
-      } else if (lowerLine.includes('complaint') || lowerLine.includes('operational risk') || lowerLine.includes('improvement') || lowerLine.includes('negative')) {
-        currentSection = 'complaints';
-        continue;
-      }
+    // Check if it's a section header line
+    if (lowerLine.includes('positive') || lowerLine.includes('good things') || lowerLine.includes('plus point') || lowerLine.includes('asset')) {
+      currentSection = 'plus';
+      continue;
+    } else if (lowerLine.includes('complaint') || lowerLine.includes('bad things') || lowerLine.includes('problem') || lowerLine.includes('risk')) {
+      currentSection = 'problems';
+      continue;
+    } else if (lowerLine.includes('actionable') || lowerLine.includes('fix') || lowerLine.includes('improvement') || lowerLine.includes('recommendation')) {
+      currentSection = 'fixes';
+      continue;
     }
 
-    // Check if it's a list item: e.g., "* **Title:** Description" or "- **Title:** Description" or "1. **Title:** Description"
-    const match = cleanLine.match(/^[*-\d.]+\s+\*\*(.*?)\*\*[:\s]+(.*)/);
-    if (match) {
-      const title = match[1].replace(/:$/, '').trim();
-      const description = match[2].trim();
-      if (currentSection === 'positive') {
-        result.topAssets.push({ title, description });
-      } else if (currentSection === 'complaints') {
-        result.operationalRisks.push({ title, description });
-      } else if (currentSection === 'recommendation') {
-        result.strategicRecommendation.description = (result.strategicRecommendation.description + ' ' + title + ': ' + description).trim();
-      }
-    } else {
-      // Just normal text
-      const cleanText = cleanLine.replace(/^[*-\d.\s]+/, '').trim();
-      if (currentSection === 'recommendation') {
-        result.strategicRecommendation.description = (result.strategicRecommendation.description + ' ' + cleanText).trim();
+    // Extract item content (remove bullets, bold prefixes etc.)
+    let content = cleanLine.replace(/^[*-\d.\s]+/, '').trim(); // Remove list bullet
+    content = content.replace(/^\*\*(.*?)\*\*[:\s]*/, '$1: ').trim(); // Remove bold prefix formatting if any
+    
+    if (content) {
+      if (currentSection === 'plus') {
+        result.businessSummary.plusPoints.push(content);
+      } else if (currentSection === 'problems') {
+        result.businessSummary.problems.push(content);
+      } else if (currentSection === 'fixes') {
+        result.businessSummary.fixes.push(content);
       }
     }
   }
 
-  // Fallback if recommendation description is empty
-  if (!result.strategicRecommendation.description) {
-    result.strategicRecommendation.description = rawText;
+  // If fallback failed to extract anything, put the raw text in the fixes array as a single item
+  if (result.businessSummary.plusPoints.length === 0 && result.businessSummary.problems.length === 0 && result.businessSummary.fixes.length === 0) {
+    result.businessSummary.fixes.push(rawText);
   }
 
   return result;
@@ -245,20 +245,67 @@ export default function ResultCard({ result }: ResultCardProps) {
             </div>
           )}
 
-          {/* 3. STRATEGIC RECOMMENDATION (Execution Plan) */}
-          {parsedInsights.strategicRecommendation.description && (
-            <div className="space-y-3">
-              <h4 className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
-                🧭 STRATEGIC RECOMMENDATION (Execution Plan)
-              </h4>
-              <div className="p-5 rounded-xl bg-purple-50/60 dark:bg-purple-50/60 border border-purple-200 space-y-2">
-                <div className="flex items-center gap-2 font-bold text-xs text-purple-600">
-                  <Compass className="w-4 h-4" />
-                  <span>{parsedInsights.strategicRecommendation.title || 'Actionable Execution Plan'}</span>
+          {/* Actionable Improvement Suggestions for Owner - Three Frames */}
+          {parsedInsights.businessSummary && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              {/* Plus Points Frame */}
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5 space-y-3">
+                <h4 className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <ThumbsUp className="w-4 h-4" />
+                  Plus Points
+                </h4>
+                <div className="space-y-2">
+                  {parsedInsights.businessSummary.plusPoints.length > 0 ? (
+                    parsedInsights.businessSummary.plusPoints.map((item, idx) => (
+                      <div key={idx} className="px-4.5 py-3 rounded-xl bg-white border border-emerald-500/10 text-xs text-slate-800 flex items-start gap-2.5 shadow-sm leading-relaxed">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
+                        <span>{item}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No specific strengths listed.</p>
+                  )}
                 </div>
-                <p className="text-xs text-slate-700 dark:text-slate-700 leading-relaxed whitespace-pre-line">
-                  {parsedInsights.strategicRecommendation.description}
-                </p>
+              </div>
+
+              {/* Problems Frame */}
+              <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-5 space-y-3">
+                <h4 className="text-[10px] font-bold text-rose-600 dark:text-rose-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <ThumbsDown className="w-4 h-4" />
+                  Problems
+                </h4>
+                <div className="space-y-2">
+                  {parsedInsights.businessSummary.problems.length > 0 ? (
+                    parsedInsights.businessSummary.problems.map((item, idx) => (
+                      <div key={idx} className="px-4.5 py-3 rounded-xl bg-white border border-rose-500/10 text-xs text-slate-800 flex items-start gap-2.5 shadow-sm leading-relaxed">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5" />
+                        <span>{item}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No active problems reported.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Fix Frame */}
+              <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-5 space-y-3">
+                <h4 className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Compass className="w-4 h-4" />
+                  Fixes / Solutions
+                </h4>
+                <div className="space-y-2">
+                  {parsedInsights.businessSummary.fixes.length > 0 ? (
+                    parsedInsights.businessSummary.fixes.map((item, idx) => (
+                      <div key={idx} className="px-4.5 py-3 rounded-xl bg-white border border-purple-500/10 text-xs text-slate-800 flex items-start gap-2.5 shadow-sm leading-relaxed">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500 flex-shrink-0 mt-1.5" />
+                        <span>{item}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No immediate fixes needed.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}

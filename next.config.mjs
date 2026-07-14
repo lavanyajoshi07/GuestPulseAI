@@ -14,6 +14,21 @@ const nextConfig = {
     '192.168.31.150'
   ],
 
+  async redirects() {
+    return [
+      {
+        source: '/login',
+        destination: '/auth/login',
+        permanent: true,
+      },
+      {
+        source: '/register',
+        destination: '/auth/register',
+        permanent: true,
+      },
+    ];
+  },
+
   /*
   async rewrites() {
     return [

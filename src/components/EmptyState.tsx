@@ -25,7 +25,7 @@ export default function EmptyState({ icon: Icon, title, description, action }: E
         {action && (
           <Link
             href={action.href}
-            className="inline-block bg-blue-600 dark:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            className="inline-block bg-[#00c2a9] hover:bg-[#00a892] dark:bg-[#00c2a9] dark:hover:bg-[#00a892] text-white px-6 py-2 rounded-lg font-medium transition-colors"
           >
             {action.label}
           </Link>

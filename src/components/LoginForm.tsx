@@ -66,8 +66,8 @@ export default function LoginForm() {
       // Update auth context
       login(data.token, data.user);
 
-      // Redirect to analyzer
-      router.push('/analyzer');
+      // Redirect to dashboard
+      router.push('/dashboard');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -83,7 +83,7 @@ export default function LoginForm() {
     try {
       const checkRes = await fetch('/api/auth/providers');
       if (checkRes.ok) {
-        await nextAuthSignIn(provider, { callbackUrl: '/analyzer' });
+        await nextAuthSignIn(provider, { callbackUrl: '/dashboard' });
       } else {
         window.location.href = `/api/auth/${provider}?flow=login`;
       }

@@ -122,12 +122,20 @@ export function validateAnalyzeRequest(body: any): AnalyzeRequest {
 export const RegisterSchema = z.object({
   email: z.string()
     .min(1, 'Email is required')
+    .trim()
+    .toLowerCase()
     .email('Please enter a valid email'),
   password: z.string()
     .min(1, 'Password is required')
-    .min(6, 'Password must be at least 6 characters'),
+    .trim()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character'),
   passwordConfirm: z.string()
-    .min(1, 'Password confirmation is required'),
+    .min(1, 'Password confirmation is required')
+    .trim(),
   name: z.string()
     .min(1, 'Name is required')
     .trim(),
@@ -139,9 +147,12 @@ export const RegisterSchema = z.object({
 export const LoginSchema = z.object({
   email: z.string()
     .min(1, 'Email is required')
+    .trim()
+    .toLowerCase()
     .email('Please enter a valid email'),
   password: z.string()
-    .min(1, 'Password is required'),
+    .min(1, 'Password is required')
+    .trim(),
 });
 
 export function validateRegisterRequest(body: any) {

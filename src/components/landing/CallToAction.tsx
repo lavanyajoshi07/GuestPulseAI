@@ -29,7 +29,7 @@ export default function CallToAction() {
           transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="text-muted-foreground max-w-2xl mx-auto text-base sm:text-lg leading-relaxed font-sans"
         >
-          Unlock hidden patterns in guest reviews, benchmark your cleanliness standards, and implement proactive actions before the next check-in.
+          Unlock hidden patterns in guest reviews and implement proactive actions before the next check-in.
         </motion.p>
 
         <motion.div

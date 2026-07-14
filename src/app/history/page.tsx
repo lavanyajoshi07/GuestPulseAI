@@ -12,7 +12,6 @@ function HistoryContent() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [predictions, setPredictions] = useState<any | null>(null);
-  const [benchmarking, setBenchmarking] = useState<any | null>(null);
   const [loggedActions, setLoggedActions] = useState<any[]>([]);
   const [forecastData, setForecastData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,10 +28,9 @@ function HistoryContent() {
     setError('');
 
     try {
-      const [revRes, predRes, benchRes, actRes, foreRes] = await Promise.all([
+      const [revRes, predRes, actRes, foreRes] = await Promise.all([
         fetch('/api/reviews'),
         fetch('/api/predictions'),
-        fetch('/api/benchmarking'),
         fetch('/api/actions'),
         fetch('/api/forecasting'),
       ]);
@@ -44,10 +42,6 @@ function HistoryContent() {
       if (predRes.ok) {
         const pData = await predRes.json();
         setPredictions(pData.data || null);
-      }
-      if (benchRes.ok) {
-        const bData = await benchRes.json();
-        setBenchmarking(bData.data || null);
       }
       if (actRes.ok) {
         const aData = await actRes.json();
@@ -85,33 +79,6 @@ function HistoryContent() {
           </p>
         </div>
 
-        {/* Operational Action History Log */}
-        {loggedActions.length > 0 && (
-          <div className="mb-8 bg-card border border-border p-6 rounded-2xl shadow-sm space-y-4">
-            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-500" />
-              Operational Actions History Log & Impact Metrics
-            </h3>
-            <div className="space-y-3">
-              {loggedActions.map((act: any, idx: number) => (
-                <div key={idx} className="p-3.5 rounded-xl bg-muted/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-foreground text-sm">{act.title}</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-card border border-border capitalize">{act.category}</span>
-                    </div>
-                    <p className="text-muted-foreground">{act.aiImpactSummary}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 text-right">
-                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold">
-                      -{act.complaintReductionPercent}% Complaints
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Search and Filter */}
         <div className="bg-card dark:bg-[#16212E] rounded-lg shadow-sm border border-border dark:border-[#1E2D3D] p-6 mb-8 transition-colors duration-300">

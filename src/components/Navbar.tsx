@@ -62,8 +62,6 @@ export default function Navbar() {
       className={`z-50 w-full transition-all duration-500 ${
         isLanding
           ? 'fixed top-0 left-0 right-0 text-white'
-          : isAnalyzer
-          ? 'relative bg-white dark:bg-[#16212E] border-b border-slate-200 dark:border-[#1E2D3D] text-foreground'
           : 'relative bg-card dark:bg-[#16212E] border-b border-border/60 dark:border-[#1E2D3D] text-foreground'
       } ${
         isNavbarVisible

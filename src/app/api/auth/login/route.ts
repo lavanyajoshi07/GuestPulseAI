@@ -60,10 +60,13 @@ export async function POST(request: NextRequest) {
       const isPasswordValid = await user.comparePassword(password);
 
       if (!isPasswordValid) {
-        throw new ValidationError('Invalid email or password');
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid email or password.',
+          code: 'INVALID_CREDENTIALS'
+        }, { status: 401 });
       }
     } catch (error) {
-      if (error instanceof ValidationError) throw error;
       throw new DatabaseError('Failed to validate password');
     }
 

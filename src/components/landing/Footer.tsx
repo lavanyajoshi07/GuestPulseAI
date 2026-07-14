@@ -56,7 +56,6 @@ export default function Footer() {
             <li><span className="hover:text-foreground transition-colors cursor-default">Smart Category Detection</span></li>
             <li><span className="hover:text-foreground transition-colors cursor-default">Predictive NPS Forecasting</span></li>
             <li><span className="hover:text-foreground transition-colors cursor-default">Automated Action Tracking</span></li>
-            <li><span className="hover:text-foreground transition-colors cursor-default">Multi-Property Benchmarking</span></li>
           </ul>
         </div>
 

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
@@ -8,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 const { users, reviews } = require('./data');
 
 const app = express();
+app.use(helmet());
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
@@ -38,7 +40,12 @@ const authLimiter = rateLimit({
 // Validation rules
 const registerValidation = [
   body('email').isEmail().withMessage('Please enter a valid email').normalizeEmail(),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
+    .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+    .matches(/[0-9]/).withMessage('Password must contain at least one number')
+    .matches(/[^a-zA-Z0-9]/).withMessage('Password must contain at least one special character'),
   body('name').trim().notEmpty().withMessage('Name is required'),
   (req, res, next) => {
     const errors = validationResult(req);
@@ -157,7 +164,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({
+      return res.status(401).json({
         success: false,
         error: 'Invalid or expired token',
         code: 'AUTH_INVALID'
@@ -318,7 +325,7 @@ app.post('/api/auth/login', authLimiter, loginValidation, (req, res) => {
 
   const isPasswordValid = bcrypt.compareSync(password, user.passwordHash);
   if (!isPasswordValid) {
-    return res.status(400).json({ success: false, error: 'Invalid email or password' });
+    return res.status(401).json({ success: false, error: 'Invalid email or password.' });
   }
 
   const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });

@@ -144,10 +144,10 @@ Return this exact JSON format:
 {
   "sentiment": "positive | neutral | negative",
   "category": "cleanliness | communication | location | amenities | host | value | other",
-  "summary": "Brief 1-sentence summary of guest feedback",
+  "summary": "Brief 1-sentence summary of guest feedback in very simple, basic English (easy vocabulary, short sentence)",
   "keywords": ["keyword1", "keyword2"],
-  "improvementSuggestion": "1-2 practical, actionable steps the homestay owner can take to improve operational quality or guest satisfaction",
-  "keyPoints": ["key point 1", "key point 2"]
+  "improvementSuggestion": "1-2 practical steps in very simple, basic English using easy words that anyone can read",
+  "keyPoints": ["key point 1 in simple English", "key point 2 in simple English"]
 }`;
 
   try {
@@ -179,10 +179,10 @@ Return this exact JSON format:
     }
 
     const defaultImprovement = normalizedSentiment === 'negative' 
-      ? `Conduct an immediate operational inspection regarding ${normalizedCategory} to prevent recurring guest dissatisfaction.` 
+      ? `Check the ${normalizedCategory} issues quickly and fix them so guests do not get unhappy.` 
       : normalizedSentiment === 'neutral' 
-      ? `Follow up with guests upon check-in to proactively address any minor comfort requirements.` 
-      : `Maintain current high standards for ${normalizedCategory} and highlight this positive aspect in your property listing.`;
+      ? `Ask guests at check-in if they need anything to make their stay comfortable.` 
+      : `Keep doing a great job with ${normalizedCategory} and talk about it in your listing.`;
 
     const result: ReviewAnalysis = {
       sentiment: normalizedSentiment as any,
@@ -205,29 +205,56 @@ Return this exact JSON format:
 export async function generateBusinessSummary(
   reviewsText: string
 ): Promise<string> {
+  const mockPayload = {
+    plusPoints: [
+      "The host and family are very kind and helpful to guests.",
+      "Rooms are clean and standard amenities are in good shape."
+    ],
+    problems: [
+      "The location gets noisy, making it a bit hard to sleep.",
+      "Check-in delays sometimes happen when the host is busy."
+    ],
+    fixes: [
+      "Provide simple soundproofing curtains or earplugs for guests.",
+      "Install a simple key lock box or setup a clear check-in time."
+    ]
+  };
+
   if (!GEMINI_API_KEY) {
-    return `### Executive Business Summary (Offline/Mock Mode)
-- **Positive Aspects**: Guests highlighted high satisfaction with host responsiveness, cleanliness standards, and convenient location.
-- **Recurring Complaints**: Occasional feedback noted room temperature controls and noise from adjacent street areas.
-- **Actionable Improvement**: Install soundproofing curtains and provide clear instructions for operating heating/cooling systems.`;
+    return JSON.stringify(mockPayload);
   }
 
-  const prompt = `Summarize guest reviews for this homestay.
-- Highlight positive aspects.
-- Identify recurring complaints.
-- Suggest one actionable improvement.
-Keep the tone professional and concise.
-Reviews: ${reviewsText}`;
+  const prompt = `You are a helpful hospitality consultant. Analyze the following guest reviews and output ONLY a valid JSON object. Do not output markdown, backticks, or any additional text.
+
+Keep the sentences short (max 10 words), using extremely simple, clear, and high-quality English that is very easy to read and understand.
+
+JSON Format:
+{
+  "plusPoints": [
+    "Short simple sentence about positive aspects 1",
+    "Short simple sentence about positive aspects 2"
+  ],
+  "problems": [
+    "Short simple sentence about recurring complaints 1",
+    "Short simple sentence about recurring complaints 2"
+  ],
+  "fixes": [
+    "Short simple sentence about how to fix the problems 1",
+    "Short simple sentence about how to fix the problems 2"
+  ]
+}
+
+Reviews to analyze:
+${reviewsText}`;
 
   try {
     const content = await queryGemini(prompt);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return jsonMatch[0].trim();
     return content.trim();
   } catch (error) {
     console.error('[Gemini] Business summary generation failed:', error);
-    return `### Operational Summary
-- **Positive Aspects**: Consistent guest praise for staff hospitality and room cleanliness.
-- **Recurring Complaints**: Periodic notes regarding wifi connectivity and parking availability.
-- **Actionable Improvement**: Upgrade high-speed Wi-Fi routers and provide clear arrival parking maps.`;
+    return JSON.stringify(mockPayload);
   }
 }
 
@@ -244,22 +271,22 @@ export async function generatePredictiveAnalytics(
     proactiveActionCards: [
       {
         id: 'act-1',
-        title: 'Check-in Delay Alert',
-        description: 'Guests may experience check-in delays during upcoming peak weekend arrivals — consider implementing automated digital self-check-in.',
+        title: 'Check-in Delay Watch',
+        description: 'Guests might wait too long to check in during busy weekends. Try using a simple digital check-in system to save time.',
         severity: 'amber',
         category: 'host',
       },
       {
         id: 'act-2',
-        title: 'Wi-Fi Bandwidth Watch',
-        description: 'Wi-Fi complaints tend to rise with higher guest density — verify mesh router firmware and bandwidth limits.',
+        title: 'Wi-Fi Speed Check',
+        description: 'Wi-Fi complaints go up when many guests are here. Check your router and internet speed settings.',
         severity: 'amber',
         category: 'amenities',
       },
       {
         id: 'act-3',
-        title: 'Highlight Host Hospitality',
-        description: 'Positive reviews praising staff warmth are trending up by 15% — feature guest quotes prominently in online marketing.',
+        title: 'Share Good Comments',
+        description: 'Guests really like the friendly staff. Share these nice reviews on your website to get more bookings.',
         severity: 'green',
         category: 'host',
       },
@@ -281,18 +308,20 @@ export async function generatePredictiveAnalytics(
   const prompt = `You are an expert predictive hospitality AI consultant for "${homestayName}".
 Analyze the historical guest feedback and forecast upcoming trends.
 
+Write the "title" and "description" in "proactiveActionCards" using extremely simple, basic English. Avoid difficult words, complex sentences, or professional jargon. Make sure a non-native speaker can easily read and understand them.
+
 Return ONLY valid JSON with no markdown formatting and no extra commentary:
 {
   "forecastPeriod": "Upcoming Quarter",
   "predictedSatisfactionRate": 90,
   "predictedRisingComplaints": ["complaint1", "complaint2"],
   "predictedTrendingPositives": ["positive1", "positive2"],
-  "seasonalInsights": "Detailed seasonal & tourist volume insights...",
+  "seasonalInsights": "Simple seasonal insights in basic English...",
   "proactiveActionCards": [
     {
       "id": "act-1",
-      "title": "Short Alert Title",
-      "description": "Actionable proactive advice for homestay owner...",
+      "title": "Short simple title",
+      "description": "Very simple advice using basic words and short sentences...",
       "severity": "green | amber | red",
       "category": "host | cleanliness | amenities | location | value"
     }
@@ -318,44 +347,15 @@ ${historicalReviewsText}`;
   }
 }
 
-export async function generateCompetitiveInsights(
-  homestayName: string,
-  ownerSatisfaction: number
-): Promise<string[]> {
-  const defaultInsights = [
-    `Your property "${homestayName}" outperforms the regional industry average in guest satisfaction (88% vs 78%).`,
-    `Cleanliness ratings for your property are 6% higher than neighboring listings.`,
-    `Wi-Fi responsiveness and check-in smoothness remain key areas where competitors are gaining guest praise.`,
-  ];
-
-  if (!GEMINI_API_KEY) return defaultInsights;
-
-  const prompt = `You are a hospitality benchmarking AI consultant. Generate 3 short, high-impact competitive insights for property "${homestayName}" with guest satisfaction score of ${ownerSatisfaction}%.
-Return ONLY a valid JSON array of strings with no markdown:
-["insight 1", "insight 2", "insight 3"]`;
-
-  try {
-    const content = await queryGemini(prompt);
-    const match = content.match(/\[[\s\S]*\]/);
-    if (match) {
-      const arr = JSON.parse(match[0]);
-      if (Array.isArray(arr) && arr.length > 0) return arr;
-    }
-    return defaultInsights;
-  } catch (e) {
-    return defaultInsights;
-  }
-}
-
 export async function generateActionImpactSummary(
   title: string,
   category: string,
   notes: string
 ): Promise<string> {
-  const defaultSummary = `Your recent operational change "${title}" directly correlated with a reduction in ${category} complaints and improved overall guest satisfaction.`;
+  const defaultSummary = `Your new change "${title}" helped reduce complaints about ${category} and made guests happier.`;
   if (!GEMINI_API_KEY) return defaultSummary;
 
-  const prompt = `You are an AI hospitality operational impact analyst. Write a 1-2 sentence concise summary of how logging operational action "${title}" (Category: ${category}, Notes: ${notes}) positively impacted guest reviews and resolved recurring complaints. Keep it professional and encouraging.`;
+  const prompt = `You are an AI hospitality operational impact analyst. Write a 1-2 sentence concise summary of how logging operational action "${title}" (Category: ${category}, Notes: ${notes}) positively impacted guest reviews and resolved recurring complaints. Use extremely simple, clear English with basic vocabulary and short sentences.`;
 
   try {
     const content = await queryGemini(prompt);
@@ -369,12 +369,12 @@ export async function generateLoyaltyForecast(
   homestayName: string
 ): Promise<string[]> {
   const defaultLoyalty = [
-    `Guests who praise host warmth and personalized local recommendations are 42% more likely to become repeat bookers.`,
-    `Repeat bookings are projected to surge during the upcoming holiday season driven by strong location appeal and high satisfaction.`,
+    `Guests who like friendly hosts and local tips are much more likely to visit again.`,
+    `We expect more bookings during holidays because of the great location and high guest satisfaction.`,
   ];
   if (!GEMINI_API_KEY) return defaultLoyalty;
 
-  const prompt = `You are a guest loyalty and Net Promoter Score (NPS) AI forecaster for "${homestayName}". Generate 2 short, high-impact insights on guest retention, NPS trends, and repeat booking drivers. Return ONLY a valid JSON array of strings with no markdown: ["insight 1", "insight 2"]`;
+  const prompt = `You are a guest loyalty and Net Promoter Score (NPS) AI forecaster for "${homestayName}". Generate 2 short, high-impact insights on guest retention, NPS trends, and repeat booking drivers. Use extremely simple, basic English with short sentences and clear vocabulary. Return ONLY a valid JSON array of strings with no markdown: ["insight 1", "insight 2"]`;
 
   try {
     const content = await queryGemini(prompt);

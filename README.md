@@ -306,11 +306,66 @@ For issues or questions:
 3. Check MongoDB connection string
 4. Verify Gemini API key is valid
 
+## 🔐 Week 6 Authentication & Security Module
+
+The platform uses a unified, production-ready authentication and security module across both the Next.js target and the custom Express backend target.
+
+### 1. Authentication Flow
+- **Registration:** 
+  - Validates user input (Name, Email, Password length $\ge 8$, strong password complexity, trims whitespace).
+  - Returns `409 Conflict` if the account already exists. Showcases `AlreadyRegisteredDialog` with a "Go to Login" action.
+  - Hashing is performed using `bcrypt` (10-12 salt rounds).
+- **Login:**
+  - Validates login credentials.
+  - Returns `404 Not Found` if the email is unregistered, showing a `RegisterFirstDialog` with a "Create Account" action.
+  - Returns `401 Unauthorized` on incorrect passwords without revealing password accuracy on non-existent accounts.
+- **Logout:** Clears client tokens/cookies and executes a POST request to `/api/auth/logout` to clear secure server-side HttpOnly cookies before redirecting to `/login`.
+
+### 2. JWT Protection
+- Reusable JWT validation middleware (`withAuth` wrapper in Next.js, `authenticateToken` in Express) secures all analytical REST endpoints.
+- Requires valid headers (`Authorization: Bearer <token>`) or fallback HttpOnly secure cookies (`auth_token`).
+- Returns HTTP `401 Unauthorized` for both missing and invalid tokens.
+
+### 3. Google OAuth Flow
+- Users can click **Continue with Google** on both login and registration forms.
+- **Register Flow:** If the Google account is already registered, logs them in seamlessly and displays a green-pulsing glassmorphic toast `"Welcome back! You are already registered."`. If new, creates the user and redirects them to the dashboard.
+- **Login Flow:** If the Google account is registered, logs them in. If not registered, blocks authorization, redirects them back, and displays `"No account exists with this Google account. Please register first."`.
+
+### 4. Rate Limiting & Input Validation
+- Endpoints `POST /api/auth/login` and `POST /api/auth/register` are protected with a rate limit of **5 attempts per 15 minutes**. Returns `429 Too Many Requests` when exceeded.
+- Server-side validations are performed using **Zod** (Next.js serverless routes) and **express-validator** (Express).
+
+### 5. Security & Middlewares
+- **CORS:** Restricts connections to authorized origins (e.g., matching the frontend host in production, localhost in development).
+- **Helmet:** Express endpoints are protected with standard security headers (installed and configured via `helmet` package).
+- **Secure Cookies:** JWTs are stored in secure, HttpOnly, sameSite cookies.
+
+### 6. Environment Variables
+Ensure the following variables are present in your `.env.local` file:
+```env
+# NextAuth & JWT Secrets
+JWT_SECRET=your-32-byte-base64-secret
+AUTH_SECRET=your-32-byte-base64-secret
+
+# Google OAuth Credentials
+AUTH_GOOGLE_ID=google-client-id.apps.googleusercontent.com
+AUTH_GOOGLE_SECRET=google-client-secret
+```
+
+### 7. Run Locally
+1. Start Next.js development server:
+   ```bash
+   pnpm dev
+   ```
+2. Start Express backend:
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+---
+
 ## 📜 License
 
 This is an educational internship project. Built for learning purposes.
 
----
-
-**Status:** Day 1 ✅ Complete
-**Next:** Day 2 - UI Components
